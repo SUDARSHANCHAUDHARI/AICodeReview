@@ -43,6 +43,17 @@ For web apps:
 - Secrets are never exposed through public environment variables.
 ```
 
+## Skill List
+
+- `codex-code-review`: general code review.
+- `codex-security-audit`: security and privacy audit.
+- `codex-codebase-explainer`: repo explanation.
+- `codex-review-fixer`: safe fix application.
+- `codex-android-review`: Android/Kotlin/KMP-specific review.
+- `codex-release-review`: release readiness.
+- `codex-pr-summary`: PR description writing.
+- `codex-context-writer`: project context creation.
+
 ## Add A New Skill
 
 Create a new folder:

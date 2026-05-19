@@ -1,0 +1,3 @@
+display_name: Codex Code Review
+short_description: Review code changes for real production risks.
+default_prompt: Use codex-code-review to review my current changes.

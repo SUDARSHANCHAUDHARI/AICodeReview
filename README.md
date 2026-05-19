@@ -12,6 +12,10 @@ The goal is simple: give Codex enough structure to review real code changes cons
 - `codex-security-audit`: threat-model driven audit for injection, auth, secrets, data exposure, config, and dependency risk.
 - `codex-codebase-explainer`: architecture and data-flow explanation for onboarding or returning to an old repo.
 - `codex-review-fixer`: conservative fixer for concrete review findings.
+- `codex-android-review`: Android/Kotlin/KMP/Compose-focused review.
+- `codex-release-review`: release-readiness review for blockers, privacy, build config, and rollout risk.
+- `codex-pr-summary`: concise PR descriptions from local changes.
+- `codex-context-writer`: creates or refreshes `PROJECT_CONTEXT.md` from real repo inspection.
 - `PROJECT_CONTEXT.md` template: a per-project memory file that keeps AI reviews grounded in your actual conventions.
 
 ## Install
@@ -37,6 +41,14 @@ This copies the skills into:
 
 Restart Codex if the new skills do not appear immediately.
 
+Installer options:
+
+```bash
+./install.sh --dry-run
+./install.sh --force
+./uninstall.sh --dry-run
+```
+
 ## Use
 
 After installing, ask Codex to use one of the skills:
@@ -55,6 +67,34 @@ Use codex-codebase-explainer to explain this repository.
 
 ```text
 Use codex-review-fixer to fix only the review findings that are safe and obvious.
+```
+
+```text
+Use codex-android-review to review my Compose and ViewModel changes.
+```
+
+```text
+Use codex-release-review to check whether this build is ready to ship.
+```
+
+```text
+Use codex-pr-summary to write a PR description for my current changes.
+```
+
+```text
+Use codex-context-writer to create PROJECT_CONTEXT.md for this repo.
+```
+
+## Workflow
+
+```mermaid
+flowchart LR
+    A["Install skills"] --> B["Add PROJECT_CONTEXT.md"]
+    B --> C["Review changes"]
+    C --> D["Audit release/security risk"]
+    D --> E["Fix safe findings"]
+    E --> F["Run project verification"]
+    F --> G["Write PR summary"]
 ```
 
 ## What Is A Codex Skill?
@@ -93,6 +133,11 @@ Fill it with the project stack, architecture, conventions, testing commands, and
 
 Do not put secrets, private keys, signing material, `.env` values, or private customer data in context files.
 
+Examples:
+
+- `examples/android-project-context.md`
+- `examples/web-project-context.md`
+
 ## Design Philosophy
 
 - Review real risks, not taste.
@@ -106,6 +151,12 @@ Do not put secrets, private keys, signing material, `.env` values, or private cu
 - Review and audit skills are read-only unless you explicitly ask Codex to make changes.
 - The fixer skill is intentionally conservative and should skip ambiguous findings.
 - Keep secrets, signing files, `.env` values, private keys, and customer data out of context files.
+
+## Validate
+
+```bash
+./scripts/validate.sh
+```
 
 ## License
 
