@@ -4,6 +4,8 @@ Each workflow is a Codex skill in `skills/<skill-name>/SKILL.md`.
 
 Edit the skill text when you want different review behavior. Keep the metadata concise and put detailed checklists in the body.
 
+Prefer project-specific rules in `PROJECT_CONTEXT.md` and reusable cross-project rules in skills.
+
 ## Add Project Rules
 
 For a project-specific convention, prefer `PROJECT_CONTEXT.md` in the target repo:
@@ -69,3 +71,12 @@ description: Use when ...
 ```
 
 Then add the folder name to `install.sh`.
+
+## Versioning Your Changes
+
+If you maintain a personal fork, keep changes small and reviewable:
+
+- One skill behavior change per commit.
+- Update docs when a prompt name or install path changes.
+- Test install with `./install.sh` before sharing.
+- Avoid putting private project details directly into reusable skills.

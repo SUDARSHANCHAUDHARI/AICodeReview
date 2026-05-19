@@ -11,7 +11,7 @@ description: Use when reviewing code changes for production bugs, regressions, s
 2. Read `PROJECT_CONTEXT.md`, `AGENTS.md`, README, and nearby implementation/tests when present.
 3. Review changed code in context. Focus on real defects, not taste.
 4. Prioritize findings by severity and include file/line references.
-5. Do not edit files unless the user explicitly asks for fixes.
+5. Do not edit files, push, publish, or change repo settings unless the user explicitly asks for that action.
 
 ## What To Check
 

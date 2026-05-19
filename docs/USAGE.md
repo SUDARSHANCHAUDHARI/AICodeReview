@@ -1,5 +1,15 @@
 # Usage
 
+## Install
+
+```bash
+git clone https://github.com/SUDARSHANCHAUDHARI/CodexReviewKit.git
+cd CodexReviewKit
+./install.sh
+```
+
+This copies the skill folders into `~/.codex/skills`.
+
 ## First Time In A Repo
 
 1. Copy `templates/PROJECT_CONTEXT.md` into the target repo.
@@ -18,10 +28,22 @@ Use codex-codebase-explainer to study this repo and help me fill PROJECT_CONTEXT
 Use codex-code-review to review my current changes.
 ```
 
+For Android/KMP work:
+
+```text
+Use codex-code-review and focus on Compose state, ViewModel state flow, coroutine usage, Gradle config, and missing tests.
+```
+
 ## Before Releasing
 
 ```text
 Use codex-security-audit and focus on release-blocking risks.
+```
+
+For Android releases:
+
+```text
+Use codex-security-audit and check for secrets, signing material, exported components, WebView risk, cleartext traffic, and sensitive logging.
 ```
 
 ## Fixing Findings
@@ -47,3 +69,11 @@ Avoid putting these into context or prompts:
 - Signing keys or keystore passwords.
 - Private customer data.
 - Private API tokens.
+
+## Suggested Workflow
+
+1. Keep `PROJECT_CONTEXT.md` current in each important repo.
+2. Run `codex-code-review` before commits or PRs.
+3. Run `codex-security-audit` before release branches or production deploys.
+4. Use `codex-review-fixer` only after reading the findings.
+5. Run your normal project tests/builds after fixes.
