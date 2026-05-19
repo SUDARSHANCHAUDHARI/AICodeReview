@@ -1,10 +1,10 @@
-# CodexReviewKit
+# AI Review Kit
 
-Codex-native code review skills you can drop into any repository.
+Portable AI code review workflows you can drop into any repository.
 
-This project is inspired by prompt-pack projects, but it is built around Codex skills and practical solo-developer workflows: Android, Kotlin Multiplatform, web apps, CLIs, scripts, and small product repos.
+This project is inspired by prompt-pack projects and built for practical solo-developer workflows: Android, Kotlin Multiplatform, web apps, CLIs, scripts, and small product repos.
 
-The goal is simple: give Codex enough structure to review real code changes consistently, without turning every review into a generic checklist.
+The goal is simple: give AI coding tools enough structure to review real code changes consistently, without turning every review into a generic checklist.
 
 ## What You Get
 
@@ -18,7 +18,18 @@ The goal is simple: give Codex enough structure to review real code changes cons
 - `codex-context-writer`: creates or refreshes `PROJECT_CONTEXT.md` from real repo inspection.
 - `PROJECT_CONTEXT.md` template: a per-project memory file that keeps AI reviews grounded in your actual conventions.
 
-## Install
+## Tool Support
+
+| Tool | Files |
+| --- | --- |
+| Codex | `skills/*/SKILL.md` |
+| OpenCode | `.opencode/commands/*.md` |
+| Claude Code | `.claude/commands/*.md` |
+| Cursor | `.cursor/rules/ai-review-kit.mdc` |
+| Windsurf | `.windsurf/rules/ai-review-kit.md` |
+| Any AI tool | `prompts/*.md` |
+
+## Install For Codex
 
 Clone the repo:
 
@@ -27,13 +38,13 @@ git clone https://github.com/SUDARSHANCHAUDHARI/CodexReviewKit.git
 cd CodexReviewKit
 ```
 
-Install the skills:
+Install the Codex skills:
 
 ```bash
 ./install.sh
 ```
 
-This copies the skills into:
+This copies the Codex skills into:
 
 ```text
 ~/.codex/skills/
@@ -49,7 +60,7 @@ Installer options:
 ./uninstall.sh --dry-run
 ```
 
-## Use
+## Use With Codex
 
 After installing, ask Codex to use one of the skills:
 
@@ -85,11 +96,61 @@ Use codex-pr-summary to write a PR description for my current changes.
 Use codex-context-writer to create PROJECT_CONTEXT.md for this repo.
 ```
 
+## Use With OpenCode
+
+Copy or keep `.opencode/commands/` in a project, then run commands like:
+
+```text
+/review
+/review-security
+/review-android
+/review-release
+/pr-summary
+/write-context
+```
+
+## Use With Claude Code
+
+Copy or keep `.claude/commands/` in a project, then run commands like:
+
+```text
+/review
+/review-security
+/review-android
+/review-release
+/pr-summary
+/write-context
+```
+
+## Use With Cursor Or Windsurf
+
+Copy the rules into your project:
+
+```text
+.cursor/rules/ai-review-kit.mdc
+.windsurf/rules/ai-review-kit.md
+```
+
+Then ask the tool to use the AI Review Kit rules for reviews, security audits, PR summaries, or context writing.
+
+## Use With Any AI Tool
+
+Copy a prompt from `prompts/` into your tool:
+
+```text
+prompts/code-review.md
+prompts/security-audit.md
+prompts/android-review.md
+prompts/release-review.md
+prompts/pr-summary.md
+prompts/context-writer.md
+```
+
 ## Workflow
 
 ```mermaid
 flowchart LR
-    A["Install skills"] --> B["Add PROJECT_CONTEXT.md"]
+    A["Choose tool format"] --> B["Add PROJECT_CONTEXT.md"]
     B --> C["Review changes"]
     C --> D["Audit release/security risk"]
     D --> E["Fix safe findings"]
@@ -101,7 +162,7 @@ flowchart LR
 
 A Codex skill is a small folder with a `SKILL.md` file. It tells Codex when to use a workflow and how to perform it.
 
-This repo ships skills as plain markdown so you can inspect, edit, fork, and tune them for your own projects.
+This repo ships Codex skills alongside generic prompts and command formats for other tools, so you can inspect, edit, fork, and tune the workflows for your own projects.
 
 ## Example Prompts
 
@@ -151,6 +212,7 @@ Examples:
 - Review and audit skills are read-only unless you explicitly ask Codex to make changes.
 - The fixer skill is intentionally conservative and should skip ambiguous findings.
 - Keep secrets, signing files, `.env` values, private keys, and customer data out of context files.
+- Public pushes, repo creation, repo deletion, and visibility changes should always require explicit approval.
 
 ## Validate
 

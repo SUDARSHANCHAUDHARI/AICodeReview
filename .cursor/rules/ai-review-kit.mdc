@@ -1,0 +1,25 @@
+---
+description: AI Review Kit rules for code review, security audit, PR summaries, and context writing
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+# AI Review Kit
+
+When asked to review code, audit security, explain the codebase, write a PR summary, or create project context, prefer the matching prompt in `prompts/`:
+
+- `prompts/code-review.md`
+- `prompts/security-audit.md`
+- `prompts/codebase-explainer.md`
+- `prompts/review-fixer.md`
+- `prompts/android-review.md`
+- `prompts/release-review.md`
+- `prompts/pr-summary.md`
+- `prompts/context-writer.md`
+
+Always inspect actual files before making claims. Read `PROJECT_CONTEXT.md`, `AGENTS.md`, README, and nearby tests when present.
+
+Do not edit files, push, publish, or change repo settings unless explicitly asked.
+
+Keep findings severity-ranked, file/line referenced, and focused on real risk.

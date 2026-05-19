@@ -1,8 +1,15 @@
 # Customising Codex Review Kit
 
-Each workflow is a Codex skill in `skills/<skill-name>/SKILL.md`.
+Each workflow has multiple formats:
 
-Edit the skill text when you want different review behavior. Keep the metadata concise and put detailed checklists in the body.
+- Codex skills in `skills/<skill-name>/SKILL.md`.
+- Generic prompts in `prompts/*.md`.
+- OpenCode commands in `.opencode/commands/*.md`.
+- Claude Code commands in `.claude/commands/*.md`.
+- Cursor rules in `.cursor/rules/*.mdc`.
+- Windsurf rules in `.windsurf/rules/*.md`.
+
+Edit the generic prompt first when you want behavior to apply across tools, then keep tool-specific files aligned.
 
 Prefer project-specific rules in `PROJECT_CONTEXT.md` and reusable cross-project rules in skills.
 
@@ -56,7 +63,7 @@ For web apps:
 
 ## Add A New Skill
 
-Create a new folder:
+Create a new Codex skill folder:
 
 ```text
 skills/my-skill/
@@ -82,6 +89,13 @@ description: Use when ...
 ```
 
 Then add the folder name to `install.sh`.
+
+For multi-tool support, also add:
+
+- `prompts/<workflow>.md`
+- `.opencode/commands/<workflow>.md`
+- `.claude/commands/<workflow>.md`
+- Cursor/Windsurf rule references if the workflow should be discoverable there.
 
 ## Versioning Your Changes
 

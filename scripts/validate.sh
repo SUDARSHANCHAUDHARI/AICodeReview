@@ -19,6 +19,8 @@ check_file() {
 
 check_file "install.sh"
 check_file "uninstall.sh"
+check_file ".cursor/rules/ai-review-kit.mdc"
+check_file ".windsurf/rules/ai-review-kit.md"
 
 bash -n install.sh || fail "install.sh has shell syntax errors"
 bash -n uninstall.sh || fail "uninstall.sh has shell syntax errors"
@@ -41,6 +43,37 @@ while IFS= read -r skill_dir; do
   grep -q "\"$skill_name\"" install.sh || fail "install.sh does not reference $skill_name"
   grep -q "\"$skill_name\"" uninstall.sh || fail "uninstall.sh does not reference $skill_name"
 done < <(find skills -mindepth 1 -maxdepth 1 -type d | sort)
+
+workflows=(
+  "code-review"
+  "security-audit"
+  "codebase-explainer"
+  "review-fixer"
+  "android-review"
+  "release-review"
+  "pr-summary"
+  "context-writer"
+)
+
+opencode_commands=(
+  "review"
+  "review-security"
+  "explain"
+  "fix-review"
+  "review-android"
+  "review-release"
+  "pr-summary"
+  "write-context"
+)
+
+for workflow in "${workflows[@]}"; do
+  check_file "prompts/$workflow.md"
+done
+
+for command in "${opencode_commands[@]}"; do
+  check_file ".opencode/commands/$command.md"
+  check_file ".claude/commands/$command.md"
+done
 
 if [[ "$failures" -gt 0 ]]; then
   echo

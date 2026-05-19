@@ -1,6 +1,17 @@
 # Usage
 
-## Install
+## Supported Formats
+
+| Tool | Files |
+| --- | --- |
+| Codex | `skills/*/SKILL.md` |
+| OpenCode | `.opencode/commands/*.md` |
+| Claude Code | `.claude/commands/*.md` |
+| Cursor | `.cursor/rules/ai-review-kit.mdc` |
+| Windsurf | `.windsurf/rules/ai-review-kit.md` |
+| Generic | `prompts/*.md` |
+
+## Install For Codex
 
 ```bash
 git clone https://github.com/SUDARSHANCHAUDHARI/CodexReviewKit.git
@@ -20,6 +31,63 @@ Overwrite existing installed skills:
 
 ```bash
 ./install.sh --force
+```
+
+## OpenCode
+
+Copy `.opencode/commands/` into a repo or keep it in this repo while working here.
+
+Available commands:
+
+```text
+/review
+/review-security
+/explain
+/fix-review
+/review-android
+/review-release
+/pr-summary
+/write-context
+```
+
+## Claude Code
+
+Copy `.claude/commands/` into a repo.
+
+Available commands:
+
+```text
+/review
+/review-security
+/explain
+/fix-review
+/review-android
+/review-release
+/pr-summary
+/write-context
+```
+
+## Cursor
+
+Copy `.cursor/rules/ai-review-kit.mdc` into a repo, then ask Cursor to use the rule for reviews, audits, PR summaries, or context writing.
+
+## Windsurf
+
+Copy `.windsurf/rules/ai-review-kit.md` into a repo, then ask Windsurf to use the rule for reviews, audits, PR summaries, or context writing.
+
+## Generic Prompts
+
+Copy prompts from `prompts/` into any AI coding tool:
+
+```text
+code-review.md
+security-audit.md
+codebase-explainer.md
+review-fixer.md
+android-review.md
+release-review.md
+pr-summary.md
+context-writer.md
 ```
 
 ## First Time In A Repo
