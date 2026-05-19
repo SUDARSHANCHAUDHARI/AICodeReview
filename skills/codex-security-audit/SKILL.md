@@ -11,7 +11,7 @@ description: Use when performing a focused security and privacy audit of code ch
 2. Read `PROJECT_CONTEXT.md`, `AGENTS.md`, README, and relevant auth/storage/networking code when present.
 3. Trace data from entry points to sinks: UI input, API handlers, CLI args, files, database writes, network calls, logs, and responses.
 4. Report exploitable or realistic risks first. Avoid speculative noise.
-5. Do not edit files unless the user asks for fixes.
+5. Do not edit files, push, publish, or change repo settings unless the user explicitly asks for that action.
 
 ## Threat Model
 

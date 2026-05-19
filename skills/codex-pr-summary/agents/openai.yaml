@@ -1,0 +1,3 @@
+display_name: Codex PR Summary
+short_description: Write a concise pull request summary.
+default_prompt: Use codex-pr-summary to summarize my current changes.

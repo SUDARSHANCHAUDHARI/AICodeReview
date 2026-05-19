@@ -1,0 +1,3 @@
+display_name: Codex Codebase Explainer
+short_description: Explain a repository's architecture and conventions.
+default_prompt: Use codex-codebase-explainer to explain this repository.

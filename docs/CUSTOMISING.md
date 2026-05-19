@@ -4,6 +4,8 @@ Each workflow is a Codex skill in `skills/<skill-name>/SKILL.md`.
 
 Edit the skill text when you want different review behavior. Keep the metadata concise and put detailed checklists in the body.
 
+Prefer project-specific rules in `PROJECT_CONTEXT.md` and reusable cross-project rules in skills.
+
 ## Add Project Rules
 
 For a project-specific convention, prefer `PROJECT_CONTEXT.md` in the target repo:
@@ -41,6 +43,17 @@ For web apps:
 - Secrets are never exposed through public environment variables.
 ```
 
+## Skill List
+
+- `codex-code-review`: general code review.
+- `codex-security-audit`: security and privacy audit.
+- `codex-codebase-explainer`: repo explanation.
+- `codex-review-fixer`: safe fix application.
+- `codex-android-review`: Android/Kotlin/KMP-specific review.
+- `codex-release-review`: release readiness.
+- `codex-pr-summary`: PR description writing.
+- `codex-context-writer`: project context creation.
+
 ## Add A New Skill
 
 Create a new folder:
@@ -69,3 +82,12 @@ description: Use when ...
 ```
 
 Then add the folder name to `install.sh`.
+
+## Versioning Your Changes
+
+If you maintain a personal fork, keep changes small and reviewable:
+
+- One skill behavior change per commit.
+- Update docs when a prompt name or install path changes.
+- Test install with `./install.sh` before sharing.
+- Avoid putting private project details directly into reusable skills.
