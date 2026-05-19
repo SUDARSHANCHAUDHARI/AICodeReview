@@ -1,0 +1,13 @@
+.DS_Store
+.env
+.env.*
+local.properties
+*.keystore
+*.jks
+*.p12
+*.pem
+*.key
+dist/
+build/
+.gradle/
+node_modules/
