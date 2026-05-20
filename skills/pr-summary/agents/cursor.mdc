@@ -1,0 +1,29 @@
+---
+description: Write a pull request summary, changelog description, reviewer notes, or testing checklist from local changes.
+globs: []
+alwaysApply: false
+---
+
+# PR Summary
+
+## Workflow
+
+1. Inspect branch, base branch, changed files, and git diff.
+2. Read nearby code and docs only as needed to understand user-facing impact.
+3. Summarize what changed, why, and how it was verified.
+4. Do not push, create PRs, or change repo settings unless explicitly asked.
+
+## Output Format
+
+```markdown
+## Summary
+- ...
+
+## Testing
+- ...
+
+## Notes For Reviewers
+- ...
+```
+
+Concise and concrete. No marketing language.

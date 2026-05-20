@@ -1,0 +1,18 @@
+---
+description: Audit codebase for TODO/FIXME/HACK markers, deprecated APIs, untested critical paths, hardcoded config, stale dependencies, dead feature flags, and estimate blast radius per item.
+globs: []
+alwaysApply: false
+---
+
+## Tech Debt Audit
+
+When asked to audit tech debt:
+
+- Search all source files for TODO, FIXME, HACK, XXX markers; read 5 lines of context around each to assess severity.
+- Check dependency files for stale packages (2+ major versions behind), deprecated packages, and packages with known CVEs.
+- Scan for deprecated API usage: @Deprecated, deprecated(), DeprecationWarning, or framework-level deprecations.
+- Identify untested critical paths: auth, payments, data migrations, and core business logic with no corresponding test coverage.
+- Flag hardcoded config: IP addresses, hostnames, staging URLs, ports, credentials, or environment-specific values in source.
+- Flag dead feature flags: flags always evaluated to the same value with no mechanism to change them.
+- Estimate blast radius per item: High (critical flow, 5+ dependents), Medium (secondary flow, 2–4 dependents), Low (isolated).
+- Order findings P0 (hardcoded credential, untested auth/payment, deprecated security API) through P3 (low-impact TODO, outdated but functioning dep) with file:line, blast radius, and a one-line remediation note each.

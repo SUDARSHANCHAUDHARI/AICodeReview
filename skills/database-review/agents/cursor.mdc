@@ -1,0 +1,33 @@
+---
+description: Database review: schema design, indexing, migration safety, query efficiency, N+1, transactions, and ORM usage.
+globs: ["**/migrations/**", "**/*.sql", "**/schema.*", "**/*Repository*", "**/*Dao*"]
+alwaysApply: false
+---
+
+# Database Review
+
+## Checklist
+
+- Primary keys defined. Column types match data (no numbers as strings).
+- Foreign key constraints defined where referential integrity is expected.
+- Columns used in WHERE/ORDER BY/JOIN/GROUP BY have indexes.
+- Composite index column order matches query patterns.
+- No redundant indexes on high-write tables.
+- Migrations are reversible. Adding NOT NULL column to large table uses multi-step approach.
+- Index creation uses CONCURRENTLY (Postgres) or equivalent to avoid locks.
+- No N+1 — batch or join related data. No SELECT *.
+- Queries on large tables use indexed columns in WHERE.
+- Multi-write operations wrapped in transactions. Transactions are short.
+- Room: @Transaction for multi-table ops, queries on background thread.
+
+## Output Format
+
+```markdown
+## Database Review Findings
+
+**[P0]** `path/file.ext:line` - Title
+Why it matters and fix direction.
+
+## Summary
+Migration safety verdict and highest-risk findings.
+```

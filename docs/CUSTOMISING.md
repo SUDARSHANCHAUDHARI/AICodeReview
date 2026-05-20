@@ -1,10 +1,21 @@
-# Customising Codex Review Kit
+# Customising AICodeReview
 
-Each workflow is a Codex skill in `skills/<skill-name>/SKILL.md`.
+Each workflow is defined in `skills/<skill-name>/SKILL.md`. Agent-specific configs live alongside it in `skills/<skill-name>/agents/`.
 
-Edit the skill text when you want different review behavior. Keep the metadata concise and put detailed checklists in the body.
+Edit the skill text when you want different review behavior. Put reusable cross-project rules in skills and project-specific rules in `PROJECT_CONTEXT.md`.
 
-Prefer project-specific rules in `PROJECT_CONTEXT.md` and reusable cross-project rules in skills.
+## Skill Structure
+
+```
+skills/<skill-name>/
+  SKILL.md              ← shared prompt (Claude Code + Codex native format)
+  agents/
+    openai.yaml         ← Codex display metadata
+    cursor.mdc          ← Cursor rule
+    copilot.md          ← GitHub Copilot instructions snippet
+    gemini.md           ← Gemini CLI instructions
+    aider.md            ← Aider conventions snippet
+```
 
 ## Add Project Rules
 
@@ -18,11 +29,11 @@ For a project-specific convention, prefer `PROJECT_CONTEXT.md` in the target rep
 - Repositories are accessed through domain interfaces.
 ```
 
-The skills instruct Codex to read project context when present, so the same installed skills can adapt to multiple repos.
+All skills read `PROJECT_CONTEXT.md` when present, so the same installed skills adapt to multiple repos automatically.
 
 ## Add Framework Rules
 
-Add focused checklist items to the relevant skill.
+Add focused checklist items to the relevant skill's `SKILL.md`.
 
 For Android/Kotlin:
 
@@ -31,7 +42,6 @@ For Android/Kotlin:
 - ViewModels should not hold Android `Context` unless using `Application` intentionally.
 - Coroutine work should use structured concurrency and avoid leaking scopes.
 - Room access should not run on the main thread.
-- Release changes should not expose signing config, secrets, or private store metadata.
 ```
 
 For web apps:
@@ -45,25 +55,33 @@ For web apps:
 
 ## Skill List
 
-- `codex-code-review`: general code review.
-- `codex-security-audit`: security and privacy audit.
-- `codex-codebase-explainer`: repo explanation.
-- `codex-review-fixer`: safe fix application.
-- `codex-android-review`: Android/Kotlin/KMP-specific review.
-- `codex-release-review`: release readiness.
-- `codex-pr-summary`: PR description writing.
-- `codex-context-writer`: project context creation.
+| Skill | Purpose |
+|---|---|
+| `code-review` | General code review |
+| `security-audit` | Security and privacy audit |
+| `codebase-explainer` | Repo explanation and onboarding |
+| `review-fixer` | Safe fix application |
+| `android-review` | Android/Kotlin/KMP-specific review |
+| `release-review` | Release readiness check |
+| `pr-summary` | PR description writing |
+| `context-writer` | Project context creation |
 
 ## Add A New Skill
 
-Create a new folder:
+1. Create the skill folder:
 
-```text
+```
 skills/my-skill/
   SKILL.md
+  agents/
+    openai.yaml
+    cursor.mdc
+    copilot.md
+    gemini.md
+    aider.md
 ```
 
-Use this minimum shape:
+2. Minimum `SKILL.md` shape:
 
 ```markdown
 ---
@@ -81,13 +99,25 @@ description: Use when ...
 4. Report what changed and what remains.
 ```
 
-Then add the folder name to `install.sh`.
+3. Add the skill name to the `skills` array in `install.sh` and `uninstall.sh`.
+
+4. Run validation:
+
+```bash
+./scripts/validate.sh
+```
+
+## Add A New Agent
+
+1. Add the agent config file to every skill under `skills/*/agents/<agent-name>.<ext>`.
+2. Update `install.sh` to handle the new agent.
+3. Update `uninstall.sh` to handle removal.
+4. Update `validate.sh` to check the new agent file exists in each skill.
+5. Document the new agent in README and docs.
 
 ## Versioning Your Changes
 
-If you maintain a personal fork, keep changes small and reviewable:
-
 - One skill behavior change per commit.
-- Update docs when a prompt name or install path changes.
-- Test install with `./install.sh` before sharing.
+- Update docs when a skill name or install path changes.
+- Test install with `./install.sh --dry-run` before sharing.
 - Avoid putting private project details directly into reusable skills.

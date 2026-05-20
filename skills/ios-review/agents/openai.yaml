@@ -1,0 +1,3 @@
+display_name: iOS Review
+short_description: iOS/macOS Swift/SwiftUI/Xcode-focused code review.
+default_prompt: Use ios-review to review my Swift and SwiftUI changes.

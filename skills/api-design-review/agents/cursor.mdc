@@ -1,0 +1,41 @@
+---
+description: REST or GraphQL API design review: naming, HTTP methods, status codes, versioning, error contracts, pagination, and breaking change identification.
+globs: ["**/routes/**", "**/controllers/**", "**/resolvers/**", "**/*.graphql", "**/openapi*", "**/swagger*"]
+alwaysApply: false
+---
+
+# API Design Review
+
+## REST Checklist
+
+- Resource names: nouns, plural, lowercase hyphenated (`/shipping-addresses`).
+- HTTP methods correct: GET side-effect free, POST creates/triggers, PUT replaces, PATCH updates, DELETE removes.
+- Status codes correct: 201+Location for created, 204 for delete, 400/401/403/404/409/422/429/500.
+- All list endpoints paginated — no unbounded responses.
+- Error responses have consistent shape across all endpoints (code, message, field errors).
+- No stack traces or internal paths in error responses.
+- API version explicit (URI or header). Breaking changes only in new version.
+- Deprecation communicated via `Deprecation`/`Sunset` headers.
+
+## Breaking Change Detection
+
+Breaking: removing/renaming fields, adding required request fields, changing types.
+Non-breaking: new optional fields, new endpoints.
+
+## GraphQL Checklist
+
+- List fields have pagination args. Mutations return mutated object.
+- Resolvers protected against N+1 (DataLoader/batching).
+- Schema changes follow `@deprecated` before removal.
+
+## Output Format
+
+```markdown
+## API Design Findings
+
+**[P1]** `path/file.ext:line` - Title
+Issue and fix direction.
+
+## Summary
+Consistency verdict and most impactful issues.
+```

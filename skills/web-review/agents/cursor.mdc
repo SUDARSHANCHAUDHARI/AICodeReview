@@ -1,0 +1,40 @@
+---
+description: React, Next.js, TypeScript, Node.js, or general web frontend and backend review.
+globs: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js", "**/package.json"]
+alwaysApply: false
+---
+
+# Web Review
+
+## Workflow
+
+1. Inspect changed files, `package.json`, framework config, and relevant source/tests.
+2. Read `PROJECT_CONTEXT.md`, `AGENTS.md`, and nearby architecture patterns.
+3. Review for web-specific correctness, security, performance, and release risk.
+4. Do not edit or push unless explicitly asked.
+
+## Checklist
+
+- TypeScript: no `any`, nullability handled, strict mode respected.
+- React/Next.js: correct Server vs Client components, loading/empty/error states present, no server-only imports in client code.
+- State: no unnecessary re-renders, stable references, correct hook dependency arrays.
+- Data fetching: no request waterfalls, cache invalidation correct.
+- Auth/authz: protected routes enforced server-side, not client-side only.
+- Security: no secrets in `NEXT_PUBLIC_*`, user input sanitized before rendering.
+- Performance: no blocking scripts, images optimised, no large whole-library imports.
+- Accessibility: keyboard-navigable, ARIA labels on icon buttons.
+- API routes/server actions: input validated at boundary, errors return correct status.
+- Release: no debug endpoints in production, `.env.example` up to date.
+
+## Output Format
+
+```markdown
+## Web Review Findings
+
+**[P1]** `path/to/file.tsx:42` - Title
+Why it matters and how to fix it.
+
+## Summary
+
+Verdict and remaining risk.
+```

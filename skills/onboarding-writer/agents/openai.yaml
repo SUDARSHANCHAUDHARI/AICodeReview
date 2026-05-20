@@ -1,0 +1,2 @@
+name: onboarding-writer
+description: Generate an ONBOARDING.md by reading the repo structure, README, build config, and key source files — no invented content, only verified facts.

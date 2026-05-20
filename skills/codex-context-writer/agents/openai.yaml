@@ -1,3 +1,0 @@
-display_name: Codex Context Writer
-short_description: Create or refresh PROJECT_CONTEXT.md.
-default_prompt: Use codex-context-writer to create PROJECT_CONTEXT.md for this repo.

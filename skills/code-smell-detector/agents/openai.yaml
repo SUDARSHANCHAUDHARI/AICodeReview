@@ -1,0 +1,2 @@
+name: code-smell-detector
+description: Detect code smells including god classes, long methods, dead code, duplicates, magic numbers, and deeply nested conditionals.

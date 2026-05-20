@@ -3,17 +3,37 @@
 ## Install
 
 ```bash
-git clone https://github.com/SUDARSHANCHAUDHARI/CodexReviewKit.git
-cd CodexReviewKit
+git clone https://github.com/SUDARSHANCHAUDHARI/AICodeReview.git
+cd AICodeReview
+```
+
+**Claude Code + Codex (default):**
+
+```bash
 ./install.sh
 ```
 
-This copies the skill folders into `~/.codex/skills`.
+**Single agent:**
 
-Preview install without writing files:
+```bash
+./install.sh --agent claude
+./install.sh --agent codex
+```
+
+**Project-local agents:**
+
+```bash
+./install.sh --agent cursor  --project /path/to/your/project
+./install.sh --agent copilot --project /path/to/your/project
+./install.sh --agent gemini  --project /path/to/your/project
+./install.sh --agent aider   --project /path/to/your/project
+```
+
+Preview without writing files:
 
 ```bash
 ./install.sh --dry-run
+./install.sh --agent cursor --project /path/to/project --dry-run
 ```
 
 Overwrite existing installed skills:
@@ -26,66 +46,66 @@ Overwrite existing installed skills:
 
 1. Copy `templates/PROJECT_CONTEXT.md` into the target repo.
 2. Fill in the real stack, conventions, commands, and risk areas.
-3. Ask Codex to review or explain the repo using the installed skills.
+3. Ask your AI agent to review or explain the repo using the installed skills.
 
 Example:
 
 ```text
-Use codex-codebase-explainer to study this repo and help me fill PROJECT_CONTEXT.md.
+Use codebase-explainer to study this repo and help me fill PROJECT_CONTEXT.md.
 ```
 
 ## Before Committing
 
 ```text
-Use codex-code-review to review my current changes.
+Use code-review to review my current changes.
 ```
 
 For Android/KMP work:
 
 ```text
-Use codex-code-review and focus on Compose state, ViewModel state flow, coroutine usage, Gradle config, and missing tests.
+Use code-review and focus on Compose state, ViewModel state flow, coroutine usage, Gradle config, and missing tests.
 ```
 
 Or use the Android-specific skill:
 
 ```text
-Use codex-android-review to review my current Android changes.
+Use android-review to review my current Android changes.
 ```
 
 ## Before Releasing
 
 ```text
-Use codex-security-audit and focus on release-blocking risks.
+Use security-audit and focus on release-blocking risks.
 ```
 
 For Android releases:
 
 ```text
-Use codex-security-audit and check for secrets, signing material, exported components, WebView risk, cleartext traffic, and sensitive logging.
+Use security-audit and check for secrets, signing material, exported components, WebView risk, cleartext traffic, and sensitive logging.
 ```
 
 For release readiness:
 
 ```text
-Use codex-release-review to check whether this build is ready to ship.
+Use release-review to check whether this build is ready to ship.
 ```
 
 ## Fixing Findings
 
 ```text
-Use codex-review-fixer to fix only concrete and low-risk findings from the last review.
+Use review-fixer to fix only concrete and low-risk findings from the last review.
 ```
 
 ## Writing PR Notes
 
 ```text
-Use codex-pr-summary to write a PR description for my current changes.
+Use pr-summary to write a PR description for my current changes.
 ```
 
 ## Writing Project Context
 
 ```text
-Use codex-context-writer to create PROJECT_CONTEXT.md for this repo.
+Use context-writer to create PROJECT_CONTEXT.md for this repo.
 ```
 
 ## Good Review Inputs
@@ -97,9 +117,7 @@ The best reviews include:
 - Known test/build commands.
 - Clear release target, when relevant.
 
-## Bad Review Inputs
-
-Avoid putting these into context or prompts:
+## What Not To Put In Context
 
 - Secrets or `.env` values.
 - Signing keys or keystore passwords.
@@ -109,8 +127,34 @@ Avoid putting these into context or prompts:
 ## Suggested Workflow
 
 1. Keep `PROJECT_CONTEXT.md` current in each important repo.
-2. Run `codex-code-review` before commits or PRs.
-3. Run `codex-security-audit` before release branches or production deploys.
-4. Use `codex-review-fixer` only after reading the findings.
+2. Run `code-review` before commits or PRs.
+3. Run `security-audit` before release branches or production deploys.
+4. Use `review-fixer` only after reading the findings.
 5. Run your normal project tests/builds after fixes.
-6. Use `codex-pr-summary` when you are ready to open a PR.
+6. Use `pr-summary` when you are ready to open a PR.
+
+## Agent-Specific Notes
+
+### Claude Code / Codex
+
+Skills are installed globally and triggered by name:
+
+```text
+Use code-review to review my current changes.
+```
+
+### Cursor
+
+Rules are installed per-project into `.cursor/rules/`. Cursor picks them up automatically based on context. You can also invoke them directly in your prompt.
+
+### GitHub Copilot
+
+Instructions are written to `.github/copilot-instructions.md`. Copilot reads this file in supported editors automatically.
+
+### Gemini CLI
+
+Instructions are written to `GEMINI.md` in your project root. Gemini CLI reads this file when present.
+
+### Aider
+
+Conventions are written to `CONVENTIONS.md` in your project root. Aider reads this file automatically.

@@ -1,0 +1,3 @@
+## Database Review
+
+When asked to review database changes: check primary keys defined, column types match data, foreign key constraints present, columns used in WHERE/ORDER BY/JOIN have indexes, composite index order matches query patterns, no redundant indexes on high-write tables. Migrations: reversible where possible, adding NOT NULL to large table uses multi-step approach, index creation uses CONCURRENTLY (Postgres) or equivalent. Queries: no N+1, no SELECT *, indexed columns in WHERE, aggregations on large tables bounded. Transactions: multi-write ops wrapped, transactions are short, deadlock risk considered. ORM: Room uses @Transaction and background threads. Rate findings P0–P3 with file:line references.

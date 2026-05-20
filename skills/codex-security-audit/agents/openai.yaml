@@ -1,3 +1,0 @@
-display_name: Codex Security Audit
-short_description: Audit changes for security and privacy risk.
-default_prompt: Use codex-security-audit on my current changes.

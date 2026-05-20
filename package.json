@@ -1,0 +1,47 @@
+{
+  "name": "aicodereview",
+  "version": "1.0.0",
+  "description": "AI-agnostic code review skill pack for Claude Code, Codex, Cursor, Copilot, Gemini, and Aider",
+  "bin": {
+    "aicodereview": "bin/aicodereview.js"
+  },
+  "scripts": {
+    "test": "bash tests/run-all.sh"
+  },
+  "keywords": [
+    "ai",
+    "code-review",
+    "claude",
+    "codex",
+    "cursor",
+    "copilot",
+    "gemini",
+    "aider",
+    "skills",
+    "developer-tools"
+  ],
+  "author": "SUDARSHANCHAUDHARI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SUDARSHANCHAUDHARI/AICodeReview.git"
+  },
+  "homepage": "https://github.com/SUDARSHANCHAUDHARI/AICodeReview#readme",
+  "bugs": {
+    "url": "https://github.com/SUDARSHANCHAUDHARI/AICodeReview/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin/",
+    "install.sh",
+    "uninstall.sh",
+    "update.sh",
+    "list-installed.sh",
+    "check-health.sh",
+    "skills/",
+    "templates/",
+    "examples/"
+  ]
+}

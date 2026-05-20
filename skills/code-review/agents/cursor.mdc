@@ -1,0 +1,38 @@
+---
+description: Review code changes for production bugs, regressions, security issues, performance risks, missing tests, and maintainability concerns. Use before commits, PRs, or releases.
+globs: []
+alwaysApply: false
+---
+
+# Code Review
+
+## Workflow
+
+1. Inspect git status, branch, changed files, and diffs.
+2. Read `PROJECT_CONTEXT.md`, `AGENTS.md`, README, and nearby implementation/tests when present.
+3. Review changed code in context. Focus on real defects, not taste.
+4. Prioritize findings by severity with file/line references.
+5. Do not edit files or push unless explicitly asked.
+
+## What To Check
+
+- Correctness: edge cases, nullability, error handling, async/concurrency, lifecycle, data loss.
+- Security/privacy: auth, injection, path traversal, secrets, sensitive logging, unsafe config.
+- Performance: repeated expensive work, unbounded loops, N+1 queries, main-thread blocking.
+- Tests: missing coverage for changed behavior, weak happy-path-only tests.
+- Maintainability: inconsistent patterns, avoidable duplication, risky abstraction.
+
+## Output Format
+
+```markdown
+## Findings
+
+**[P0]** `path/to/file.ext:123` - Short title
+Why it matters and how to fix it.
+
+## Summary
+
+Overall judgment and test gaps.
+```
+
+Severity: P0 = must fix, P1 = should fix, P2 = useful, P3 = optional.

@@ -1,0 +1,3 @@
+display_name: Security Audit
+short_description: Threat-model driven security and privacy audit.
+default_prompt: Use security-audit on my current changes.

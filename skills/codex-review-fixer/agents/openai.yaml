@@ -1,3 +1,0 @@
-display_name: Codex Review Fixer
-short_description: Apply safe and concrete review fixes.
-default_prompt: Use codex-review-fixer to fix safe findings from the last review.

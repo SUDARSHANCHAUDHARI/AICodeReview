@@ -1,0 +1,2 @@
+name: error-handling-review
+description: Review error handling for silent catches, inconsistent propagation, missing UI error states, untyped errors, and missing boundary handling.

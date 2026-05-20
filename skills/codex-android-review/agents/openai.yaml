@@ -1,3 +1,0 @@
-display_name: Codex Android Review
-short_description: Review Android, Kotlin, KMP, and Compose changes.
-default_prompt: Use codex-android-review to review my current Android changes.

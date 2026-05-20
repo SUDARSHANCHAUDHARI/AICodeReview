@@ -1,0 +1,3 @@
+## Web Review
+
+When asked to review React/Next.js/TypeScript/Node changes: check no `any` in TypeScript (strict mode), correct Server vs Client component split with loading/empty/error states, no unnecessary re-renders or unstable hook dependencies, no request waterfalls, auth enforced server-side not client-side only, no secrets in `NEXT_PUBLIC_*` env vars, user input sanitized before rendering, images optimised, no whole-library imports, keyboard navigation and ARIA labels, API routes validate input and return correct HTTP status, no debug endpoints in production. Order findings by severity (P0–P3) with `file.tsx:line` references.

@@ -1,0 +1,19 @@
+---
+description: Detect code smells including god classes, long methods, dead code, duplicates, magic numbers, and deeply nested conditionals.
+globs: []
+alwaysApply: false
+---
+
+## Code Smell Detector
+
+When asked to detect code smells:
+
+- Flag god classes: files over 500 lines or classes with more than 10 public methods.
+- Flag long methods: any function/method over 50 lines.
+- Flag feature envy: methods that use another class's fields/methods more than their own.
+- Flag dead code: unused functions, unread variables, unreachable branches.
+- Flag duplicate blocks: identical or near-identical segments of 6+ lines appearing in multiple locations.
+- Flag magic numbers: inline numeric literals with no named constant or explanatory comment (exclude 0, 1, -1 where semantically obvious).
+- Flag boolean flag parameters: booleans controlling fundamentally different code paths inside a function.
+- Flag deep nesting: if/else, try/catch, or loop nesting greater than 3 levels deep.
+- Order findings P0 (god class in hot path, unreachable branch hiding bug) through P3 (minor nesting, small magic number) with file:line and a one-line fix suggestion each.

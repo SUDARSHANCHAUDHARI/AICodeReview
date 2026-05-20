@@ -1,0 +1,38 @@
+---
+description: iOS, macOS, Swift, SwiftUI, Combine, Swift Concurrency, Xcode, or App Store release review.
+globs: ["**/*.swift", "**/Package.swift", "**/*.xcodeproj/**", "**/*.xcworkspace/**"]
+alwaysApply: false
+---
+
+# iOS Review
+
+## Workflow
+
+1. Inspect changed Swift files, `Package.swift`, and relevant source/tests.
+2. Read `PROJECT_CONTEXT.md`, `AGENTS.md`, and nearby architecture patterns.
+3. Review for iOS/macOS-specific correctness, lifecycle safety, and release risk.
+4. Do not edit or push unless explicitly asked.
+
+## Checklist
+
+- SwiftUI: view body complexity, correct property wrappers (`@State`, `@Binding`, `@StateObject`, `@ObservedObject`, `@Observable`), state hoisting.
+- Swift Concurrency: `async`/`await` over callbacks, `Task` cancellation handled, `@MainActor` on UI updates.
+- Memory: no retain cycles in closures, `[weak self]` where needed.
+- Navigation: `NavigationStack` preferred over deprecated `NavigationView`.
+- Persistence: no main-thread blocking CoreData/SwiftData fetches.
+- Security: Keychain for sensitive storage, no hardcoded secrets, no PII in logs.
+- Accessibility: `accessibilityLabel`, dynamic type, VoiceOver compatible.
+- Release: bundle ID, version, build number consistent; entitlements match capabilities.
+
+## Output Format
+
+```markdown
+## iOS Review Findings
+
+**[P1]** `path/to/File.swift:42` - Title
+Why it matters and how to fix it.
+
+## Summary
+
+Verdict and remaining risk.
+```

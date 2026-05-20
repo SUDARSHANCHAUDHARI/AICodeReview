@@ -1,0 +1,2 @@
+name: tech-debt-audit
+description: Audit codebase for TODO/FIXME/HACK markers, deprecated APIs, untested critical paths, hardcoded config, stale dependencies, dead feature flags, and estimate blast radius per item.

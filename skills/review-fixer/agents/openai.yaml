@@ -1,0 +1,3 @@
+display_name: Review Fixer
+short_description: Apply safe, concrete fixes from review findings.
+default_prompt: Use review-fixer to fix the review findings.

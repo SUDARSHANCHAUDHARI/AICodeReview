@@ -1,0 +1,20 @@
+---
+description: Review React Native code for JS thread blocking, bridge inefficiency, memory leaks, FlatList misuse, platform isolation, and deep link security.
+globs: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js", "**/android/**", "**/ios/**"]
+alwaysApply: false
+---
+
+## React Native Review
+
+When asked to review React Native code:
+
+- Flag JS thread blocking: synchronous heavy computation (crypto, parsing, large sorts) on the JS thread without a worker or native offload.
+- Flag bridge calls in tight loops or rapid event handlers not batched.
+- Flag ScrollView for lists of more than 20 items — use FlatList or SectionList instead.
+- Flag missing useCallback/useMemo on event handlers passed to native components.
+- Flag memory leaks: event listeners, DeviceEventEmitter subscriptions, timers, or store subscriptions not cleaned up in useEffect return or componentWillUnmount.
+- Flag OTA update (CodePush) missing staged rollout or rollback config.
+- Flag business logic tangled with inline Platform.OS checks — isolate to platform-specific files.
+- Flag deep link params used directly in navigation or API calls without sanitisation.
+- Flag unpredictable navigation back-stack patterns.
+- Order findings P0 (JS blocking on main path, unsanitised deep link params, memory leak on critical screen) through P3 (minor memoization gap) with file:line and a one-line fix each.

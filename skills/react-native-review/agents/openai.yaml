@@ -1,0 +1,2 @@
+name: react-native-review
+description: Review React Native code for JS thread blocking, bridge inefficiency, memory leaks, FlatList misuse, platform isolation, and deep link security.

@@ -1,0 +1,3 @@
+## KMP Review
+
+When asked to review Kotlin Multiplatform code: check business logic is in `commonMain` with no Android/iOS SDK imports leaking in, `expect`/`actual` used for genuinely platform-specific behaviour only with matching `actual` in all targets, source set dependencies correct. Ktor: platform engine configured (OkHttp/Darwin), timeout/retry at client level, serialization plugin set, no hardcoded URLs. Coroutines: `Dispatchers.Main` not assumed equivalent, no `runBlocking` on iOS main thread, `StateFlow`/`SharedFlow` for iOS consumption. iOS interop: public API Objective-C compatible, `suspend` exported correctly, no Kotlin-Swift retain cycles. All targets build cleanly. Order findings P0–P3 with file.kt:line references.

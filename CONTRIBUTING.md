@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for improving CodexReviewKit.
+Thanks for improving AICodeReview.
 
 ## Local Safety
 
@@ -11,9 +11,9 @@ Thanks for improving CodexReviewKit.
 
 ## Editing Skills
 
-Skills live in `skills/<skill-name>/SKILL.md`.
+Skills live in `skills/<skill-name>/SKILL.md`. Each skill also has agent-specific configs in `skills/<skill-name>/agents/`.
 
-Each skill needs YAML frontmatter:
+Each `SKILL.md` needs YAML frontmatter:
 
 ```markdown
 ---
@@ -22,27 +22,37 @@ description: Use when ...
 ---
 ```
 
-Keep descriptions clear because Codex uses them to decide when a skill applies.
+Keep descriptions clear — AI agents use them to decide when a skill applies.
 
 ## Adding A Skill
 
 1. Create `skills/<skill-name>/SKILL.md`.
-2. Add `skills/<skill-name>/agents/openai.yaml`.
-3. Add the skill name to `install.sh`.
-4. Add the skill name to `uninstall.sh`.
-5. Run `./scripts/validate.sh`.
+2. Add all five agent configs:
+   - `skills/<skill-name>/agents/openai.yaml`
+   - `skills/<skill-name>/agents/cursor.mdc`
+   - `skills/<skill-name>/agents/copilot.md`
+   - `skills/<skill-name>/agents/gemini.md`
+   - `skills/<skill-name>/agents/aider.md`
+3. Add the skill name to the `skills` array in `install.sh` and `uninstall.sh`.
+4. Run `./scripts/validate.sh`.
+
+## Adding An Agent
+
+1. Add the agent config file to every skill under `skills/*/agents/<agent-name>.<ext>`.
+2. Update `install.sh` to handle the new `--agent` value.
+3. Update `uninstall.sh` to handle removal.
+4. Update `validate.sh` to check the new file exists in every skill.
+5. Update README, USAGE.md, and CUSTOMISING.md.
 
 ## Prompt Quality
 
 - Prefer concrete workflows over vague advice.
-- Tell Codex what to inspect before acting.
-- Include output expectations.
+- Tell the AI what to inspect before acting.
+- Include output format expectations.
 - Keep reusable skills free of personal or private repo details.
 - Put repo-specific conventions in `PROJECT_CONTEXT.md`.
 
 ## Before Sharing
-
-Run:
 
 ```bash
 ./install.sh --dry-run

@@ -1,0 +1,3 @@
+display_name: Accessibility Audit
+short_description: Audit UI for WCAG 2.2, keyboard nav, screen reader, contrast, and ARIA.
+default_prompt: Use accessibility-audit to review my UI for accessibility issues.

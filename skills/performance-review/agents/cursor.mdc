@@ -1,0 +1,31 @@
+---
+description: Performance review: CPU hotpaths, memory retention, render bottlenecks, N+1 queries, network efficiency, and bundle size.
+globs: []
+alwaysApply: false
+---
+
+# Performance Review
+
+## Checklist
+
+- No expensive work (sort, filter, crypto, serialization) in hot paths or tight loops.
+- No unnecessary re-computation — memoize or cache where applicable.
+- No blocking I/O on responsive threads/queues.
+- No large in-memory collections that could be streamed or paginated.
+- Android: no unstable Compose state causing excess recompositions, Bitmap lifecycle correct.
+- iOS: no main-thread work during scroll, no large images held unreduced.
+- Web: no render-blocking scripts, no layout thrashing, stable list keys.
+- No N+1 queries, queries use indexed columns, no unbounded SELECT.
+- No chatty API patterns — batch where possible.
+- Web: no whole-library imports, code splitting applied.
+
+## Output Format
+
+```markdown
+## Performance Findings
+
+**[P1]** `path/file.ext:line` - Title
+Impact and fix direction.
+
+## Summary
+```

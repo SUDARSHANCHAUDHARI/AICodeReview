@@ -1,0 +1,20 @@
+---
+description: Review GraphQL schema, resolvers, and client queries for N+1 problems, auth gaps, missing validation, complexity limits, and breaking changes.
+globs: ["**/*.graphql", "**/*.gql", "**/resolvers/**", "**/schema/**"]
+alwaysApply: false
+---
+
+## GraphQL Review
+
+When asked to review GraphQL code:
+
+- Check schema naming: types PascalCase, fields camelCase, enum values SCREAMING_SNAKE_CASE.
+- Check nullability: non-null on stable required fields, nullable on legitimately absent fields.
+- Flag N+1 resolvers: list resolvers that issue a separate DB/service query per parent without a DataLoader or batch function.
+- Flag auth gaps: sensitive fields (PII, admin data) with no field-level auth check in the resolver.
+- Flag missing input validation on mutation inputs (types, ranges, length limits, format).
+- Flag missing query depth and complexity limits in server config.
+- Flag subscription resolvers that have no cleanup on disconnect.
+- Flag breaking schema changes: removed fields, changed types, added required arguments, renamed types.
+- Flag mixed pagination conventions (cursor vs offset) without documented justification.
+- Order findings P0 (auth gap on sensitive field, breaking change without deprecation) through P3 (minor naming deviation) with file:line and a one-line fix each.
