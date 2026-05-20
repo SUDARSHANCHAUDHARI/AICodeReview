@@ -1,0 +1,35 @@
+---
+description: Review AI agent config files (CLAUDE.md, AGENTS.md, .cursor/rules/, copilot-instructions.md, GEMINI.md, CONVENTIONS.md, PROJECT_CONTEXT.md) for secrets, empty placeholders, vague instructions, and cross-agent inconsistencies.
+globs: ["CLAUDE.md", "AGENTS.md", "GEMINI.md", "CONVENTIONS.md", "PROJECT_CONTEXT.md", ".github/copilot-instructions.md", ".cursor/rules/*.mdc"]
+alwaysApply: false
+---
+
+# Agent Config Review
+
+## Workflow
+
+1. Identify which agent config files exist in the repo.
+2. Read each file fully before making claims.
+3. Review for security, completeness, quality, and consistency issues.
+4. Do not edit files unless explicitly asked.
+
+## What To Check
+
+- **Security**: no secrets, tokens, keys, signing material, or private data.
+- **Completeness**: no empty placeholders (`- Build:` with no value, `TODO`, `TBD`, `...`).
+- **Quality**: instructions are concrete and actionable, not vague.
+- **Consistency**: all agent configs agree on stack, conventions, and architecture.
+- **Format**: valid YAML frontmatter in SKILL.md and .mdc files.
+
+## Output Format
+
+```markdown
+## Agent Config Findings
+
+**[P0]** `file:line` - Issue title
+Why it matters and fix direction.
+
+## Summary
+```
+
+P0 = secrets, P1 = broken/empty config, P2 = quality, P3 = polish.

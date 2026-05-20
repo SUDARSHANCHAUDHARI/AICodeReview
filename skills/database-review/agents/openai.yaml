@@ -1,0 +1,3 @@
+display_name: Database Review
+short_description: Review schema, migrations, queries, indexing, and transactions.
+default_prompt: Use database-review to review my database changes.

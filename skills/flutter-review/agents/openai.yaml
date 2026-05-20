@@ -1,0 +1,3 @@
+display_name: Flutter Review
+short_description: Review Flutter and Dart code: widgets, state, isolates, platform channels.
+default_prompt: Use flutter-review to review my Flutter changes.

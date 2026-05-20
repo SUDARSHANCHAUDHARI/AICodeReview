@@ -12,7 +12,7 @@
 - UI: Jetpack Compose.
 - Architecture: MVVM with Clean Architecture boundaries.
 - State: ViewModel exposes `StateFlow<UiState>`.
-- Dependency injection: Hilt unless repo already uses another pattern.
+- Dependency injection: Hilt.
 - Persistence: Room and/or DataStore Preferences.
 - Serialization: Kotlinx Serialization.
 - Networking: Retrofit for Android-only projects; Ktor for KMP projects.
@@ -35,16 +35,17 @@
 
 ## Commands
 
-- Build:
-- Unit tests:
-- Instrumented tests:
-- Lint:
-- Release build:
+- Build: `./gradlew assembleDebug`
+- Unit tests: `./gradlew test`
+- Instrumented tests: `./gradlew connectedAndroidTest`
+- Lint: `./gradlew lint`
+- Release build: `./gradlew bundleRelease`
 
 ## Known Risk Areas
 
-- 
+- Room migration gaps if schema changes were made without a migration file.
+- Coroutine scope leaks in screens that navigate away before a job completes.
 
 ## Active Migrations
 
-- 
+- None currently. Add entries here when a migration is in progress.

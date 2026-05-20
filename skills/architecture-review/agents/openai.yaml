@@ -1,0 +1,2 @@
+name: architecture-review
+description: Review codebase architecture for layer violations, dependency direction, coupling, cohesion, and god modules.

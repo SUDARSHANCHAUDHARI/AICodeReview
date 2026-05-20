@@ -1,0 +1,3 @@
+display_name: Backend Review
+short_description: Review backend API code, auth, queries, rate limiting, and contracts.
+default_prompt: Use backend-review to review my backend changes.

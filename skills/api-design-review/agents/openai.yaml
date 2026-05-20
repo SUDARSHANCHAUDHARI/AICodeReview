@@ -1,0 +1,3 @@
+display_name: API Design Review
+short_description: Review REST or GraphQL API design, naming, versioning, and contracts.
+default_prompt: Use api-design-review to review my API design.

@@ -1,0 +1,3 @@
+## iOS Review
+
+When asked to review iOS/macOS/Swift/SwiftUI changes: check SwiftUI property wrappers (`@State`, `@Binding`, `@StateObject`, `@ObservedObject`, `@Observable`) and state hoisting, Swift Concurrency usage (`async`/`await` over callbacks, `Task` cancellation, `@MainActor` on UI), no retain cycles (`[weak self]` in closures), `NavigationStack` over deprecated `NavigationView`, no main-thread blocking persistence calls, Keychain for sensitive storage, no hardcoded secrets, accessibility labels, and consistent bundle ID/version/entitlements for release. Order findings by severity (P0–P3) with `File.swift:line` references.

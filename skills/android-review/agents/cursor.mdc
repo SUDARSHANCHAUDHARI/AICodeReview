@@ -1,0 +1,40 @@
+---
+description: Android, Kotlin, KMP, Jetpack Compose, Room, Hilt, Gradle, or Play Store release review.
+globs: ["**/*.kt", "**/*.kts", "**/AndroidManifest.xml"]
+alwaysApply: false
+---
+
+# Android Review
+
+## Workflow
+
+1. Inspect changed files, Gradle files, manifests, and relevant source/tests.
+2. Read `PROJECT_CONTEXT.md`, `AGENTS.md`, and nearby architecture patterns.
+3. Review for Android-specific correctness, lifecycle safety, UI behavior, and release risk.
+4. Do not edit or push unless explicitly asked.
+
+## Checklist
+
+- Compose: state hoisting, stable state, recomposition safety.
+- ViewModel: exposes `StateFlow<UiState>`, no leaking Android `Context`.
+- Coroutines: structured concurrency, correct dispatchers, cancellation-safe.
+- Persistence: Room off main thread, migrations considered, DataStore for new prefs.
+- Architecture: data/domain/presentation boundaries match repo patterns.
+- DI: Hilt modules scoped correctly, no duplicate bindings.
+- Navigation: typed arguments, predictable back behavior.
+- Accessibility: content descriptions, touch targets, dark mode.
+- Security: no secrets, keystores, signing material, or unsafe exported components.
+- Release: AAB-oriented, versioning sane.
+
+## Output Format
+
+```markdown
+## Android Review Findings
+
+**[P1]** `path/to/file.kt:42` - Title
+Why it matters and how to fix it.
+
+## Summary
+
+Verdict and remaining risk.
+```

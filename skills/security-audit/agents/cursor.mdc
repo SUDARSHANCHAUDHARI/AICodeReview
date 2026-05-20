@@ -1,0 +1,39 @@
+---
+description: Security and privacy audit of code changes, PRs, release candidates, API endpoints, auth flows, storage, config, or dependencies.
+globs: []
+alwaysApply: false
+---
+
+# Security Audit
+
+## Workflow
+
+1. Inspect changed files and security-sensitive configuration.
+2. Read `PROJECT_CONTEXT.md`, `AGENTS.md`, and relevant auth/storage/networking code.
+3. Trace data from entry points to sinks: input, API handlers, DB writes, logs, responses.
+4. Report exploitable or realistic risks first. Avoid speculative noise.
+5. Do not edit files or push unless explicitly asked.
+
+## Threat Model
+
+- Injection: SQL, command, template, path traversal, SSRF.
+- Auth/authz: missing auth checks, IDOR, weak token validation.
+- Secrets: hardcoded keys, tokens, passwords, unsafe `.env` handling.
+- Sensitive data: logs, analytics, crash reports, local storage.
+- Crypto: weak algorithms, predictable randomness.
+- Input validation: missing length/type checks, unsafe uploads, ReDoS.
+- Config: debug mode, permissive CORS, missing security headers.
+- Dependencies: known risky or outdated security-sensitive libraries.
+
+## Output Format
+
+```markdown
+## Security Findings
+
+**[CRITICAL]** `path/to/file.ext:123` - Title
+Attack scenario, impact, concrete fix.
+
+## Verdict
+
+SECURE / REVIEW NEEDED / DO NOT MERGE
+```

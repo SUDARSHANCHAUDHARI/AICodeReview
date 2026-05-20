@@ -1,0 +1,3 @@
+display_name: Docker Review
+short_description: Review Dockerfiles and docker-compose for security, size, and correctness.
+default_prompt: Use docker-review to review my Docker configuration.

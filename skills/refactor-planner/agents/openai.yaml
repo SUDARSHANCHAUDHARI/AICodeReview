@@ -1,0 +1,3 @@
+display_name: Refactor Planner
+short_description: Plan a refactor safely: blast radius, incremental steps, rollback strategy.
+default_prompt: Use refactor-planner to plan this refactor.

@@ -1,0 +1,3 @@
+## CI Review
+
+When asked to review CI/CD configuration: check secrets accessed via `${{ secrets.NAME }}` never echoed to logs, `pull_request_target` not used with checkout+run of untrusted fork code, top-level `permissions: contents: read` or more restrictive, jobs override permissions only for what they need, third-party actions pinned to full commit SHA for security-critical workflows, `concurrency` set for PR workflows, cache keys include lockfile hash, deploy steps only run on correct branch with production approval gate, production secrets distinct from staging, no debug endpoints in production artifacts. Rate findings P0–P3 with file:line references.

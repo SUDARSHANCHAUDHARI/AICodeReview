@@ -1,0 +1,3 @@
+display_name: KMP Review
+short_description: Review Kotlin Multiplatform and Compose Multiplatform code.
+default_prompt: Use kmp-review to review my Kotlin Multiplatform changes.

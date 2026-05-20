@@ -1,3 +1,0 @@
-display_name: Codex Release Review
-short_description: Check release readiness and blockers.
-default_prompt: Use codex-release-review to check this release.

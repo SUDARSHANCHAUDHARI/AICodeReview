@@ -1,0 +1,3 @@
+display_name: Codebase Explainer
+short_description: Explain repo architecture, modules, and data flow.
+default_prompt: Use codebase-explainer to explain this repository.

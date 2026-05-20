@@ -1,0 +1,3 @@
+display_name: Release Review
+short_description: Check release readiness and blockers before shipping.
+default_prompt: Use release-review to check whether this build is ready to ship.

@@ -1,0 +1,3 @@
+display_name: Changelog Writer
+short_description: Generate CHANGELOG entries from git commits.
+default_prompt: Use changelog-writer to generate CHANGELOG entries from recent commits.

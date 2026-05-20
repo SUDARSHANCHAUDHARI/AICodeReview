@@ -1,0 +1,3 @@
+display_name: Web Review
+short_description: React/Next.js/TypeScript/Node-focused code review.
+default_prompt: Use web-review to review my React and Next.js changes.
