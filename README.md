@@ -34,8 +34,8 @@ The goal is simple: give AI coding tools enough structure to review real code ch
 Clone the repo:
 
 ```bash
-git clone https://github.com/SUDARSHANCHAUDHARI/CodexReviewKit.git
-cd CodexReviewKit
+git clone https://github.com/SUDARSHANCHAUDHARI/AICodeReview.git
+cd AICodeReview
 ```
 
 Install the Codex skills:

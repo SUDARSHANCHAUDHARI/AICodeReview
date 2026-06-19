@@ -14,8 +14,8 @@
 ## Install For Codex
 
 ```bash
-git clone https://github.com/SUDARSHANCHAUDHARI/CodexReviewKit.git
-cd CodexReviewKit
+git clone https://github.com/SUDARSHANCHAUDHARI/AICodeReview.git
+cd AICodeReview
 ./install.sh
 ```
 

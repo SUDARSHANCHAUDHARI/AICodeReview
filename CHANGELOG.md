@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to CodexReviewKit will be documented here.
+All notable changes to AICodeReview will be documented here.
 
 ## Unreleased
 

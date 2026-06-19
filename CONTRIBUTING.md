@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for improving CodexReviewKit.
+Thanks for improving AICodeReview.
 
 ## Local Safety
 
