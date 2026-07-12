@@ -214,7 +214,10 @@ import sys, re
 path, start_marker, end_marker, new_section = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 content = open(path).read()
 pattern = re.escape(start_marker) + r'.*?' + re.escape(end_marker)
-updated = re.sub(pattern, new_section, content, flags=re.DOTALL)
+# Use a function as the replacement so backslashes / group references
+# (\1, \g<...>) inside the section content are treated literally, not as
+# regex replacement escapes — otherwise skill content could corrupt the file.
+updated = re.sub(pattern, lambda _m: new_section, content, flags=re.DOTALL)
 open(path, 'w').write(updated)
 PYEOF
     echo "Updated $agent_file section -> $dest"
