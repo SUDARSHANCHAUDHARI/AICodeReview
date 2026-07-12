@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 'use strict';
 
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const path = require('path');
 
 const installScript = path.join(__dirname, '..', 'install.sh');
-const args = process.argv.slice(2).join(' ');
+const args = process.argv.slice(2);
 
 // Show help if no args given
-if (process.argv.slice(2).length === 0) {
+if (args.length === 0) {
   console.log('AICodeReview — AI-agnostic code review skill pack\n');
   console.log('Usage:');
   console.log('  npx aicodereview --agent claude');
@@ -20,7 +20,9 @@ if (process.argv.slice(2).length === 0) {
 }
 
 try {
-  execSync(`bash "${installScript}" ${args}`, { stdio: 'inherit' });
+  // Pass argv as an array (no shell) so user input can never be interpreted
+  // as shell syntax — avoids command injection via crafted arguments.
+  execFileSync('bash', [installScript, ...args], { stdio: 'inherit' });
 } catch (err) {
   process.exit(err.status || 1);
 }
