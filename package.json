@@ -6,9 +6,14 @@
     "aicodereview": "bin/aicodereview.js"
   },
   "scripts": {
-    "test": "bash tests/run-all.sh",
-    "validate": "bash scripts/validate.sh",
-    "generate": "python3 scripts/skill_artifacts.py sync-openai --write"
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "npm run test:node",
+    "test:node": "npm run build && node --test tests/node-cli.test.js",
+    "test:shell": "bash tests/run-all.sh",
+    "validate": "npm run build && node bin/aicodereview.js validate",
+    "generate": "npm run build && node bin/aicodereview.js generate --write",
+    "prepack": "npm run clean && npm run build"
   },
   "keywords": [
     "ai",
@@ -38,6 +43,8 @@
   },
   "files": [
     "bin/",
+    "dist/",
+    "src/",
     "aicodereview-lib.sh",
     "install.sh",
     "uninstall.sh",
@@ -48,5 +55,9 @@
     "skills/",
     "templates/",
     "examples/"
-  ]
+  ],
+  "devDependencies": {
+    "@types/node": "22.15.0",
+    "typescript": "5.8.3"
+  }
 }
