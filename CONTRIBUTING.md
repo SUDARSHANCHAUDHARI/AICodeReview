@@ -2,129 +2,87 @@
 
 Thanks for improving AICodeReview.
 
-## Local safety
+## Safety
 
-- Do not commit secrets, `.env` values, signing keys, API tokens, or private customer data.
-- Preserve user-owned files and configuration when changing installers.
-- Test installer changes with dry runs and temporary project directories.
-- Preflight every destination before a multi-agent command writes its first file.
-- Do not publish, rename the repository, or change visibility unless explicitly requested.
+- Never commit secrets, signing material, API tokens, private customer data, or `.env` values.
+- Preserve user-owned files and configuration.
+- Back up unmanaged conflicts before replacement.
+- Preflight every destination before a multi-agent operation writes.
+- Do not publish, rename the repository, or change visibility without explicit approval.
 
 ## Development setup
 
 ```bash
 npm install
-npm run build
 npm test
-npm run test:shell
+npm run validate
+npm run pack:check
 ```
 
-The Node suite runs cross-platform. Shell compatibility remains temporary until Phase 2B.
+## Skills
 
-## Editing a skill
+`skills/<skill-name>/SKILL.md` is the only workflow source.
 
-The canonical workflow is:
-
-```text
-skills/<skill-name>/SKILL.md
-```
-
-Each file needs YAML frontmatter:
+Every skill needs YAML frontmatter:
 
 ```markdown
 ---
 name: skill-name
-description: Use when ...
+description: Use when this specific workflow is required.
 ---
 ```
 
-Descriptions should state the concrete task and activation conditions clearly enough for on-demand selection.
+Add a skill by creating `SKILL.md`, running `aicodereview generate --write`, and updating public documentation when the inventory changes. Skills are discovered dynamically. Do not add installer arrays.
 
-Do not create separate Copilot, Gemini, OpenCode, Cursor, or Aider workflow copies. Native agents and selective Aider loading use `SKILL.md`; Cursor rules and the Aider catalog are generated from it.
+Do not create per-skill `cursor.mdc`, `copilot.md`, `gemini.md`, or `aider.md` copies. Cursor rules and the Aider catalog are generated from canonical skills.
 
-## Adding a skill
+## CLI changes
 
-1. Create `skills/<skill-name>/SKILL.md`.
-2. Create the `agents/` directory if needed.
-3. Build and generate the OpenAI metadata:
+- Implement published behavior in TypeScript.
+- Keep the npm entrypoint free of Bash or Python delegation.
+- Keep replacements transactional and rollback-safe.
+- Add Node tests with temporary projects and isolated global agent homes.
+- Cover Windows paths, unmanaged backups, corrupt markers, all-agent preflight, update detection, and ownership-aware uninstall.
+- Do not edit `dist/` manually.
 
-```bash
-npm run build
-node bin/aicodereview.js generate --write
-```
+## Hooks
 
-4. Run validation and tests:
+- Add hooks only for agents with documented hook formats.
+- Hooks must be optional and non-destructive by default.
+- Hook stdout must contain only valid protocol JSON. Write diagnostics to stderr.
+- Never call an external AI provider from a lifecycle hook without explicit user configuration.
+- Never describe deterministic Git checks as an AI code review.
+- Add install, status, uninstall, conflict-backup, and cross-platform tests.
+- Keep generated local reports out of Git.
 
-```bash
-npm run validate
-npm test
-npm run test:shell
-```
+## Evaluations
 
-5. Update README and CHANGELOG when the public inventory changes.
+- Use fake or synthetic data only.
+- Add expected finding IDs and severities to `evals/manifest.json`.
+- Add a false-positive control for each new evaluation category.
+- Keep fixtures small enough for agents to inspect completely.
+- Use the same prompt and fixture state when comparing agents.
+- Do not publish behavioral claims without reproducible result files.
+- Update `evals/README.md` when the result schema or scoring changes.
 
-Skills are discovered dynamically. Do not add an installer array.
+## Integration claims
 
-## Generated artifacts
+Confirm whether an agent supports native skills, rules, conventions, extensions, persistent instructions, or hooks. Implement only the supported capability and describe it accurately.
 
-Committed OpenAI metadata must match the TypeScript generator:
+## Review quality
 
-```bash
-node bin/aicodereview.js generate --check
-```
-
-Cursor rules and `AICODEREVIEW.md` are rendered during installation. Aider skill directories are copied from canonical `SKILL.md` files to `.aicodereview/skills/` so users can load one workflow with `/read`.
-
-Do not commit these obsolete per-skill files:
-
-```text
-cursor.mdc
-copilot.md
-gemini.md
-aider.md
-```
-
-Keep the generated Aider catalog compact. It should list available workflows and explain selective loading, not embed all workflow bodies.
-
-## Changing the CLI
-
-- Implement new cross-platform behavior in `src/cli.ts` first.
-- Keep the npm entrypoint free of Bash delegation.
-- Add Node behavior tests using temporary directories and isolated `CLAUDE_HOME` and `CODEX_HOME` values.
-- Cover Windows path handling, unmanaged backups, corrupt markers, all-agent preflight, and ownership-aware uninstall.
-- Keep temporary shell behavior aligned until the equivalent command moves to Node.
-- Do not edit `dist/` manually. It is generated during build and package creation.
-
-## Adding an integration
-
-1. Confirm whether the agent supports native skills, project rules, conventions, persistent instructions, or hooks.
-2. Prefer native on-demand skills where available.
-3. Add install, update, inventory, health, and uninstall behavior.
-4. Add ownership and unmanaged-conflict handling.
-5. Add migration logic for replaced adapters.
-6. Add an all-agent preflight when the integration participates in combined installation.
-7. Add behavioral tests proving user-owned content is preserved.
-8. Update README, AGENTS.md, SKILL_GUIDE.md, issue templates, and CHANGELOG.
-
-Do not describe skills, rules, conventions, and hooks as equivalent capabilities.
-
-## Prompt quality
-
-- Inspect repository state and relevant files before making claims.
+- Inspect relevant files before making claims.
 - Focus on correctness, security, performance, testing, and operational risk.
 - Include evidence, file and line references, impact, and a concrete fix direction.
-- Avoid taste-based findings.
+- Avoid style-only findings.
 - Keep review and audit workflows read-only unless the user explicitly requests changes.
-- Put repository-specific conventions in `PROJECT_CONTEXT.md`.
 
 ## Before sharing
 
 ```bash
-npm run build
-npm run validate
 npm test
-npm run test:shell
-npm pack --dry-run
+npm run validate
+npm run pack:check
 ```
 
-Installer and migration changes should also be tested against unmanaged conflicts, corrupt legacy markers, selective Aider skill paths, and existing user configuration.
+Also test unmanaged conflicts, corrupt legacy markers, selective Aider paths, hook install and removal, evaluation validation, and existing user configuration.

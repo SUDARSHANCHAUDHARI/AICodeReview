@@ -11,3 +11,4 @@ dist/
 build/
 .gradle/
 node_modules/
+.aicodereview/reports/
