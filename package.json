@@ -1,7 +1,7 @@
 {
   "name": "aicodereview",
   "version": "1.0.0",
-  "description": "Portable code review workflows for Claude Code, Codex, Cursor, Copilot, Gemini, and Aider",
+  "description": "Portable code review workflows for Claude Code, Codex, Cursor, Copilot, Gemini, OpenCode, and Aider",
   "bin": {
     "aicodereview": "bin/aicodereview.js"
   },
@@ -16,6 +16,7 @@
     "cursor",
     "copilot",
     "gemini",
+    "opencode",
     "aider",
     "skills",
     "developer-tools"
