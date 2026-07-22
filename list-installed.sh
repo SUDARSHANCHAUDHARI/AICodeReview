@@ -6,8 +6,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ROOT_DIR/aicodereview-lib.sh"
 load_skills "$ROOT_DIR"
 
-SECTION_START="# >>> AICodeReview START <<<"
-SECTION_END="# >>> AICodeReview END <<<"
+LEGACY_SECTION_START="# >>> AICodeReview START <<<"
+LEGACY_SECTION_END="# >>> AICodeReview END <<<"
 
 project_dir=""
 
@@ -16,7 +16,7 @@ usage() {
 Usage: ./list-installed.sh [--project <path>]
 
 Prints AGENT | SKILL | STATUS for every skill discovered under skills/.
-Statuses are installed, unmanaged, or missing.
+Statuses are installed, legacy, unmanaged, or missing.
 EOF_USAGE
 }
 
@@ -48,20 +48,36 @@ header() {
 }
 row() { echo "$(pad "$1" $COL_AGENT) $(pad "$2" $COL_SKILL) $3"; }
 
+native_skill_status() {
+  local path="$1"
+  if [[ ! -e "$path" ]]; then
+    printf 'missing'
+  elif is_managed_skill_dir "$path"; then
+    printf 'installed'
+  else
+    printf 'unmanaged'
+  fi
+}
+
 check_native_agent() {
   local label="$1"
   local base="$2"
-  local skill path
+  local legacy_file="${3:-}"
+  local legacy_state="absent"
+  local skill status
+
+  if [[ -n "$legacy_file" ]]; then
+    legacy_state="$(managed_section_state "$legacy_file" "$LEGACY_SECTION_START" "$LEGACY_SECTION_END")"
+  fi
 
   for skill in "${skills[@]}"; do
-    path="$base/$skill"
-    if [[ ! -e "$path" ]]; then
-      row "$label" "$skill" "missing"
-    elif is_managed_skill_dir "$path"; then
-      row "$label" "$skill" "installed"
-    else
-      row "$label" "$skill" "unmanaged"
+    status="$(native_skill_status "$base/$skill")"
+    if [[ "$status" == "missing" && "$legacy_state" == "managed" ]]; then
+      status="legacy"
+    elif [[ "$status" == "missing" && "$legacy_state" == "corrupt" ]]; then
+      status="unmanaged"
     fi
+    row "$label" "$skill" "$status"
   done
 }
 
@@ -73,7 +89,7 @@ check_cursor() {
     path="$rules_dir/$skill.mdc"
     if [[ ! -e "$path" ]]; then
       row "cursor" "$skill" "missing"
-    elif is_managed_cursor_rule "$path"; then
+    elif is_managed_file "$path"; then
       row "cursor" "$skill" "installed"
     else
       row "cursor" "$skill" "unmanaged"
@@ -81,34 +97,33 @@ check_cursor() {
   done
 }
 
-check_combined() {
-  local label="$1"
-  local file="$2"
-  local state section skill
+check_aider() {
+  local file="$project_dir/AICODEREVIEW.md"
+  local legacy_state status skill
 
-  state="$(managed_section_state "$file" "$SECTION_START" "$SECTION_END")"
-  if [[ "$state" != "managed" ]]; then
-    for skill in "${skills[@]}"; do
-      row "$label" "$skill" "$([[ "$state" == "unmanaged" || "$state" == "corrupt" ]] && echo unmanaged || echo missing)"
-    done
-    return
+  legacy_state="$(managed_section_state "$project_dir/CONVENTIONS.md" "$LEGACY_SECTION_START" "$LEGACY_SECTION_END")"
+
+  if [[ ! -e "$file" ]]; then
+    if [[ "$legacy_state" == "managed" ]]; then
+      status="legacy"
+    elif [[ "$legacy_state" == "corrupt" ]]; then
+      status="unmanaged"
+    else
+      status="missing"
+    fi
+  elif is_managed_file "$file"; then
+    status="installed"
+  else
+    status="unmanaged"
   fi
 
-  section="$(mktemp "${TMPDIR:-/tmp}/aicodereview-list.XXXXXX")"
-  awk -v start="$SECTION_START" -v end="$SECTION_END" '
-    $0 == start { capture=1 }
-    capture { print }
-    $0 == end { exit }
-  ' "$file" > "$section"
-
   for skill in "${skills[@]}"; do
-    if grep -qF "$skill" "$section"; then
-      row "$label" "$skill" "installed"
+    if [[ "$status" == "installed" ]] && ! grep -qF "$skill" "$file"; then
+      row "aider" "$skill" "missing"
     else
-      row "$label" "$skill" "missing"
+      row "aider" "$skill" "$status"
     fi
   done
-  rm -f "$section"
 }
 
 header
@@ -120,11 +135,13 @@ if [[ -n "$project_dir" ]]; then
     echo "Error: project directory does not exist: $project_dir" >&2
     exit 1
   fi
+
   check_cursor
-  check_combined "copilot" "$project_dir/.github/copilot-instructions.md"
-  check_combined "gemini" "$project_dir/GEMINI.md"
-  check_combined "aider" "$project_dir/CONVENTIONS.md"
+  check_native_agent "copilot" "$project_dir/.github/skills" "$project_dir/.github/copilot-instructions.md"
+  check_native_agent "gemini" "$project_dir/.gemini/skills" "$project_dir/GEMINI.md"
+  check_native_agent "opencode" "$project_dir/.opencode/skills"
+  check_aider
 else
   echo ""
-  echo "Tip: pass --project <path> to include Cursor, Copilot, Gemini, and Aider."
+  echo "Tip: pass --project <path> to include Cursor, Copilot, Gemini, OpenCode, and Aider."
 fi
