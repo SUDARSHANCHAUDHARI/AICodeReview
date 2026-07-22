@@ -1,39 +1,41 @@
 ## Summary
 
-<!-- One or two sentences describing what this PR does and why. -->
+<!-- Describe what changed and why. -->
 
 ## Checklist
 
-### Skill files (if adding or modifying a skill)
+### Skill files
 
-- [ ] Skill folder created under `skills/<skill-name>/`
-- [ ] `skills/<skill-name>/SKILL.md` exists with valid frontmatter (`name`, `description`)
-- [ ] `skills/<skill-name>/agents/openai.yaml` is present and non-empty
-- [ ] `skills/<skill-name>/agents/cursor.mdc` is present with correct frontmatter
-- [ ] `skills/<skill-name>/agents/copilot.md` is present and non-empty
-- [ ] `skills/<skill-name>/agents/gemini.md` is present and non-empty
-- [ ] `skills/<skill-name>/agents/aider.md` is present and non-empty
+- [ ] `skills/<skill-name>/SKILL.md` is the canonical workflow
+- [ ] `SKILL.md` frontmatter has a matching `name` and specific `description`
+- [ ] Required files under `skills/<skill-name>/agents/` are present
+- [ ] The workflow reports evidence-based findings rather than style preferences
+- [ ] Review or audit behavior remains read-only unless explicitly requested
 
-### Integration
+### Integration safety
 
-- [ ] `install.sh` skills array includes the new skill name
-- [ ] `uninstall.sh` skills array includes the new skill name
+- [ ] No hard-coded skill inventory was added
+- [ ] User-owned files and configuration are preserved
+- [ ] New generated paths have ownership markers
+- [ ] `--force` backs up unmanaged conflicts
+- [ ] Migration validates markers before changing native paths
+- [ ] Aider changes do not create a duplicate `read` key
 
-### Validation
+### Validation and tests
 
 - [ ] `./scripts/validate.sh` passes with no failures
-
-### Tests
-
 - [ ] `./tests/run-all.sh` passes with no failures
+- [ ] Installer changes include behavioral install and uninstall coverage
+- [ ] Migration changes include user-content preservation and corrupt-marker tests
 
 ### Documentation
 
-- [ ] `README.md` updated if the skill list or usage instructions changed
-- [ ] `AGENTS.md` updated if agent support matrix changed
-- [ ] `CHANGELOG.md` entry added under `## Unreleased`
+- [ ] `README.md` reflects any public behavior or support change
+- [ ] `AGENTS.md` reflects any architecture change
+- [ ] `SKILL_GUIDE.md` reflects any contributor workflow change
+- [ ] `CHANGELOG.md` has an entry under `Unreleased`
 
 ### General
 
-- [ ] No secrets, tokens, API keys, or personal credentials in any committed file
-- [ ] No planning docs or spec files committed (e.g. SPEC_*.md, PLAN_*.md)
+- [ ] No secrets, tokens, API keys, signing files, or private customer data are committed
+- [ ] No unrelated planning or generated scratch files are committed
