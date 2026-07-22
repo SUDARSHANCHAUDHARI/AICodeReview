@@ -7,12 +7,13 @@ import {
   readFileSync,
   readdirSync,
   renameSync,
+  rmdirSync,
   rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 const SOURCE = 'SUDARSHANCHAUDHARI/AICodeReview';
 const DIR_MARKER = '.aicodereview-managed';
@@ -128,9 +129,26 @@ function readText(path: string): string {
 
 function atomicWrite(path: string, content: string): void {
   mkdirSync(dirname(path), { recursive: true });
-  const temp = `${path}.aicodereview-tmp-${process.pid}-${Math.random().toString(16).slice(2)}`;
+  const nonce = `${process.pid}-${Math.random().toString(16).slice(2)}`;
+  const temp = `${path}.aicodereview-tmp-${nonce}`;
+  const previous = `${path}.aicodereview-old-${nonce}`;
   writeFileSync(temp, content, 'utf8');
-  renameSync(temp, path);
+
+  let movedPrevious = false;
+  try {
+    if (existsSync(path)) {
+      rmSync(previous, { force: true });
+      renameSync(path, previous);
+      movedPrevious = true;
+    }
+    renameSync(temp, path);
+    if (movedPrevious) rmSync(previous, { force: true });
+  } catch (error) {
+    rmSync(temp, { force: true });
+    if (existsSync(path)) rmSync(path, { force: true });
+    if (movedPrevious && existsSync(previous)) renameSync(previous, path);
+    throw error;
+  }
 }
 
 function skills(root: string): SkillData[] {
@@ -285,7 +303,12 @@ function preflightDir(path: string, force: boolean): void {
 }
 
 function preflightFile(path: string, force: boolean): void {
-  if (existsSync(path) && !isManagedFile(path) && !force) fail(`${path} exists and is not managed by AICodeReview. Use --force to back it up.`);
+  const marker = markerForFile(path);
+  const hasDestination = existsSync(path);
+  const hasMarker = existsSync(marker);
+  if ((hasDestination || hasMarker) && !isManagedFile(path) && !force) {
+    fail(`${path} or its ownership marker exists and is not managed by AICodeReview. Use --force to back it up.`);
+  }
 }
 
 function installDirectory(source: string, destination: string, skill: string, force: boolean, dryRun: boolean): void {
@@ -330,17 +353,19 @@ function installDirectory(source: string, destination: string, skill: string, fo
 }
 
 function installFile(content: string, destination: string, item: string, force: boolean, dryRun: boolean): void {
-  if (existsSync(destination) && !force) {
+  const destinationMarker = markerForFile(destination);
+  if ((existsSync(destination) || existsSync(destinationMarker)) && !force) {
     console.log(`Skipping ${item}; already present (use --force to update)`);
     return;
   }
   if (dryRun) {
-    console.log(`${existsSync(destination) ? 'Would update' : 'Would install'} ${item} -> ${destination}`);
+    console.log(`${existsSync(destination) || existsSync(destinationMarker) ? 'Would update' : 'Would install'} ${item} -> ${destination}`);
     return;
   }
 
   mkdirSync(dirname(destination), { recursive: true });
-  const temp = `${destination}.aicodereview-tmp-${process.pid}-${Math.random().toString(16).slice(2)}`;
+  const nonce = `${process.pid}-${Math.random().toString(16).slice(2)}`;
+  const temp = `${destination}.aicodereview-tmp-${nonce}`;
   const tempMarker = markerForFile(temp);
   writeFileSync(temp, content, 'utf8');
   writeFileSync(tempMarker, `source=${SOURCE}\nitem=${item}\n`, 'utf8');
@@ -348,35 +373,52 @@ function installFile(content: string, destination: string, item: string, force: 
   let previous = '';
   let previousMarker = '';
   let keepPrevious = false;
+  let keepPreviousMarker = false;
+
   if (existsSync(destination)) {
     if (isManagedFile(destination)) {
-      previous = `${destination}.aicodereview-old-${process.pid}`;
-      previousMarker = `${markerForFile(destination)}.old-${process.pid}`;
-      rmSync(previous, { force: true });
-      rmSync(previousMarker, { force: true });
-      renameSync(destination, previous);
-      renameSync(markerForFile(destination), previousMarker);
+      previous = `${destination}.aicodereview-old-${nonce}`;
+      previousMarker = `${destinationMarker}.old-${nonce}`;
     } else {
       previous = backupPath(destination);
       keepPrevious = true;
-      renameSync(destination, previous);
     }
+    rmSync(previous, { force: true });
+    renameSync(destination, previous);
   }
 
+  if (existsSync(destinationMarker)) {
+    if (isManagedFile(destination)) {
+      if (!previousMarker) previousMarker = `${destinationMarker}.old-${nonce}`;
+    } else {
+      previousMarker = backupPath(destinationMarker);
+      keepPreviousMarker = true;
+    }
+    rmSync(previousMarker, { force: true });
+    renameSync(destinationMarker, previousMarker);
+  }
+
+  let installedDestination = false;
+  let installedMarker = false;
   try {
     renameSync(temp, destination);
-    renameSync(tempMarker, markerForFile(destination));
+    installedDestination = true;
+    renameSync(tempMarker, destinationMarker);
+    installedMarker = true;
   } catch (error) {
+    if (installedMarker && existsSync(destinationMarker)) rmSync(destinationMarker, { force: true });
+    if (installedDestination && existsSync(destination)) rmSync(destination, { force: true });
     rmSync(temp, { force: true });
     rmSync(tempMarker, { force: true });
     if (previous && existsSync(previous)) renameSync(previous, destination);
-    if (previousMarker && existsSync(previousMarker)) renameSync(previousMarker, markerForFile(destination));
+    if (previousMarker && existsSync(previousMarker)) renameSync(previousMarker, destinationMarker);
     throw error;
   }
 
   if (previous && !keepPrevious) rmSync(previous, { force: true });
-  if (previousMarker) rmSync(previousMarker, { force: true });
+  if (previousMarker && !keepPreviousMarker) rmSync(previousMarker, { force: true });
   if (keepPrevious) console.log(`Backed up unmanaged destination -> ${previous}`);
+  if (keepPreviousMarker) console.log(`Backed up unmanaged ownership marker -> ${previousMarker}`);
   console.log(`Installed ${item} -> ${destination}`);
 }
 
@@ -398,11 +440,17 @@ function removeSection(path: string, start: string, end: string, dryRun: boolean
     console.log(`Would remove managed section from ${path}`);
     return;
   }
+
   const text = readText(path);
   const startIndex = text.indexOf(start);
   const endIndex = text.indexOf(end, startIndex) + end.length;
-  const result = `${text.slice(0, startIndex)}${text.slice(endIndex)}`.replace(/\n{3,}/g, '\n\n').trim();
-  if (result) atomicWrite(path, `${result}\n`);
+  const before = text.slice(0, startIndex);
+  const after = text.slice(endIndex);
+  const result = before.endsWith('\n') && after.startsWith('\n')
+    ? `${before}${after.slice(1)}`
+    : `${before}${after}`;
+
+  if (result.trim()) atomicWrite(path, result);
   else rmSync(path, { force: true });
 }
 
@@ -416,7 +464,7 @@ function configureAider(project: string, dryRun: boolean): void {
     ? current.replace(new RegExp(`\\n?${escapeRegExp(AIDER_START)}[\\s\\S]*?${escapeRegExp(AIDER_END)}\\n?`), '\n')
     : current;
 
-  if (/^\s*read\s*:/m.test(cleaned)) {
+  if (/^read\s*:/m.test(cleaned)) {
     if (state === 'managed') removeSection(path, AIDER_START, AIDER_END, dryRun);
     if (!cleaned.includes('AICODEREVIEW.md')) console.log('Aider has a user-managed read setting; add AICODEREVIEW.md to it manually.');
     return;
@@ -529,12 +577,17 @@ function removeDirectory(path: string, dryRun: boolean): void {
 }
 
 function removeFile(path: string, dryRun: boolean): void {
-  if (!existsSync(path) || !isManagedFile(path)) return;
-  if (dryRun) console.log(`Would remove ${path}`);
-  else {
-    rmSync(path, { force: true });
-    rmSync(markerForFile(path), { force: true });
+  const marker = markerForFile(path);
+  const managed = isManagedFile(path);
+  if (!managed) return;
+
+  if (dryRun) {
+    console.log(`Would remove ${existsSync(path) ? `${path} and ` : ''}${marker}`);
+    return;
   }
+
+  rmSync(path, { force: true });
+  rmSync(marker, { force: true });
 }
 
 function uninstallNative(allSkills: SkillData[], base: string, dryRun: boolean): void {
@@ -572,7 +625,7 @@ function uninstall(root: string, options: CliOptions): void {
     removeSection(join(project, 'CONVENTIONS.md'), LEGACY_START, LEGACY_END, options.dryRun);
     if (!options.dryRun) {
       for (const path of [join(project, '.aicodereview', 'skills'), join(project, '.aicodereview')]) {
-        try { rmSync(path, { recursive: false }); } catch { /* preserve non-empty user directories */ }
+        try { rmdirSync(path); } catch { /* preserve non-empty user directories */ }
       }
     }
   }
