@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "test": "npm run clean && npm run build && node --test tests/node-cli.test.js",
+    "test": "npm run clean && npm run build && node --test tests/node-cli.test.js tests/node-maintenance.test.js",
     "validate": "npm run build && node bin/aicodereview.js validate",
     "generate": "npm run build && node bin/aicodereview.js generate --write",
     "pack:check": "npm run clean && npm run build && npm pack --dry-run",
