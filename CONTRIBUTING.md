@@ -29,13 +29,13 @@ description: Use when ...
 
 Descriptions should state the concrete task and activation conditions clearly enough for on-demand selection.
 
-Do not create separate Copilot, Gemini, OpenCode, Cursor, or Aider workflow copies. Native agents use `SKILL.md`; Cursor and Aider output is generated from it.
+Do not create separate Copilot, Gemini, OpenCode, Cursor, or Aider workflow copies. Native agents and selective Aider loading use `SKILL.md`; Cursor rules and the Aider catalog are generated from it.
 
 ## Adding a skill
 
 1. Create `skills/<skill-name>/SKILL.md`.
 2. Create the `agents/` directory if needed.
-3. Run the metadata generator:
+3. Generate the OpenAI metadata:
 
 ```bash
 python3 scripts/skill_artifacts.py sync-openai --write
@@ -60,7 +60,9 @@ Committed OpenAI metadata must match the generator:
 python3 scripts/skill_artifacts.py sync-openai --check
 ```
 
-Cursor rules and `AICODEREVIEW.md` are rendered at installation time. Do not commit these obsolete per-skill files:
+Cursor rules and `AICODEREVIEW.md` are rendered at installation time. Aider skill directories are copied from canonical `SKILL.md` files to `.aicodereview/skills/` so users can load one workflow with `/read`.
+
+Do not commit these obsolete per-skill files:
 
 ```text
 cursor.mdc
@@ -68,6 +70,8 @@ copilot.md
 gemini.md
 aider.md
 ```
+
+Keep the generated Aider catalog compact. It should list available workflows and explain selective loading, not embed all workflow bodies.
 
 ## Adding an integration
 
@@ -101,4 +105,4 @@ python3 scripts/skill_artifacts.py sync-openai --check
 ./tests/run-all.sh
 ```
 
-Installer and migration changes should also be tested against unmanaged conflicts, corrupt legacy markers, and existing user configuration.
+Installer and migration changes should also be tested against unmanaged conflicts, corrupt legacy markers, selective Aider skill paths, and existing user configuration.
