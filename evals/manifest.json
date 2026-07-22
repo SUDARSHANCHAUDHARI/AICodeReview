@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "id": "secret-exposure",
+      "path": "fixtures/secret-exposure",
+      "skill": "security-audit",
+      "prompt": "Use security-audit to review this fixture. Return finding IDs and severities only after inspecting the files.",
+      "expected": [
+        {
+          "id": "hardcoded-production-secret",
+          "severity": "P0",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "missing-authorization",
+      "path": "fixtures/missing-authorization",
+      "skill": "backend-review",
+      "prompt": "Use backend-review to review this fixture. Return finding IDs and severities only after inspecting the files.",
+      "expected": [
+        {
+          "id": "missing-object-authorization",
+          "severity": "P1",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "false-positive-safe",
+      "path": "fixtures/false-positive-safe",
+      "skill": "code-review",
+      "prompt": "Use code-review to review this fixture. Return finding IDs and severities only after inspecting the files.",
+      "expected": [],
+      "forbidden": [
+        "hardcoded-production-secret",
+        "missing-object-authorization"
+      ]
+    }
+  ]
+}
