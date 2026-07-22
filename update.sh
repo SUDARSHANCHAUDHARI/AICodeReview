@@ -17,8 +17,8 @@ Options:
   --dry-run          Show what would happen without writing files.
   --help             Show this help message.
 
-Detection supports both Phase 0B native paths and legacy managed sections so
-existing Copilot, Gemini, and Aider installations migrate during update.
+Detection supports native paths, selective Aider skills, and legacy managed
+sections so existing integrations migrate during update.
 EOF_USAGE
 }
 
@@ -85,7 +85,9 @@ if [[ -n "$project_dir" ]]; then
 
   [[ -f "$project_dir/.opencode/skills/$PROBE_SKILL/SKILL.md" ]] && detected_agents+=("opencode")
 
-  if [[ -f "$project_dir/AICODEREVIEW.md" ]] || legacy_is_managed "$project_dir/CONVENTIONS.md"; then
+  if [[ -f "$project_dir/AICODEREVIEW.md" ]] || \
+     [[ -f "$project_dir/.aicodereview/skills/$PROBE_SKILL/SKILL.md" ]] || \
+     legacy_is_managed "$project_dir/CONVENTIONS.md"; then
     detected_agents+=("aider")
   fi
 fi
