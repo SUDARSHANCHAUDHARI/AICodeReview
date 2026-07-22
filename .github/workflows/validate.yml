@@ -1,0 +1,24 @@
+name: Validate
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate repository
+        run: bash scripts/validate.sh
+      - name: Run tests
+        run: bash tests/run-all.sh
