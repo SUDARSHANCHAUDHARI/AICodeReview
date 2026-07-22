@@ -137,6 +137,16 @@ def strip_h1(body: str) -> str:
     return "\n".join(lines).strip()
 
 
+def demote_headings(body: str) -> str:
+    lines = []
+    for line in body.splitlines():
+        match = re.match(r"^(#{1,5})(\s+.*)$", line)
+        if match:
+            line = "#{0}{1}".format(match.group(1), match.group(2))
+        lines.append(line)
+    return "\n".join(lines)
+
+
 def render_aider(root: Path, names: List[str]) -> str:
     parts = [
         "# AICodeReview",
@@ -147,7 +157,8 @@ def render_aider(root: Path, names: List[str]) -> str:
     ]
     for name in names:
         description, body = parse_skill(root, name)
-        parts.extend(["", "## {0}".format(display_name(name)), "", description, "", strip_h1(body)])
+        nested_body = demote_headings(strip_h1(body))
+        parts.extend(["", "## {0}".format(display_name(name)), "", description, "", nested_body])
     return "\n".join(parts).rstrip() + "\n"
 
 
