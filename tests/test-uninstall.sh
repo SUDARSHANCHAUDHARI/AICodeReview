@@ -23,7 +23,9 @@ assert_not_exists "$project/.cursor/rules/code-review.mdc" "Managed Cursor rule 
 assert_not_exists "$project/.github/skills/code-review" "Managed Copilot skill is removed"
 assert_not_exists "$project/.gemini/skills/code-review" "Managed Gemini skill is removed"
 assert_not_exists "$project/.opencode/skills/code-review" "Managed OpenCode skill is removed"
-assert_not_exists "$project/AICODEREVIEW.md" "Managed Aider file is removed"
+assert_not_exists "$project/.aicodereview/skills/code-review" "Managed Aider selective skill is removed"
+assert_not_exists "$project/.aicodereview" "Empty Aider skill root is removed"
+assert_not_exists "$project/AICODEREVIEW.md" "Managed Aider catalog is removed"
 assert_not_exists "$project/.aider.conf.yml" "Managed-only Aider config is removed"
 
 unmanaged="$TMP_ROOT/unmanaged"
@@ -31,6 +33,12 @@ mkdir -p "$unmanaged/.github/skills/code-review"
 printf 'keep\n' > "$unmanaged/.github/skills/code-review/custom.txt"
 "$ROOT_DIR/uninstall.sh" --agent copilot --project "$unmanaged" >/dev/null 2>&1
 assert_exists "$unmanaged/.github/skills/code-review/custom.txt" "Unmanaged Copilot skill is preserved"
+
+unmanaged_aider="$TMP_ROOT/unmanaged-aider"
+mkdir -p "$unmanaged_aider/.aicodereview/skills/code-review"
+printf 'keep\n' > "$unmanaged_aider/.aicodereview/skills/code-review/custom.txt"
+"$ROOT_DIR/uninstall.sh" --agent aider --project "$unmanaged_aider" >/dev/null 2>&1
+assert_exists "$unmanaged_aider/.aicodereview/skills/code-review/custom.txt" "Unmanaged Aider skill is preserved"
 
 legacy="$TMP_ROOT/legacy"
 mkdir -p "$legacy/.github"
