@@ -46,6 +46,7 @@ Migration:
     skills are installed successfully.
   - Aider migrates the managed CONVENTIONS.md section to AICODEREVIEW.md.
   - Corrupt legacy markers stop migration before native files are changed.
+  - The all-agent install preflights every target before writing any adapter.
 EOF_USAGE
 }
 
@@ -83,9 +84,17 @@ done
 
 [[ -z "$agent" ]] && agent="global"
 
+preflight_native_agent() {
+  local dest_base="$1"
+  local label="$2"
+  preflight_skill_directory_install "$dest_base" "$label" "$force"
+}
+
 install_native_agent() {
   local dest_base="$1"
   local label="$2"
+
+  preflight_native_agent "$dest_base" "$label"
 
   if [[ "$dry_run" == false ]]; then
     mkdir -p "$dest_base"
@@ -103,7 +112,7 @@ install_native_agent() {
   done
 }
 
-install_project_native_agent() {
+preflight_project_native_agent() {
   local dest_base="$1"
   local label="$2"
   local legacy_file="${3:-}"
@@ -117,7 +126,15 @@ install_project_native_agent() {
     fi
   fi
 
-  preflight_skill_directory_install "$dest_base" "$label" "$force"
+  preflight_native_agent "$dest_base" "$label"
+}
+
+install_project_native_agent() {
+  local dest_base="$1"
+  local label="$2"
+  local legacy_file="${3:-}"
+
+  preflight_project_native_agent "$dest_base" "$label" "$legacy_file"
   install_native_agent "$dest_base" "$label"
 
   if [[ -n "$legacy_file" ]]; then
@@ -130,19 +147,27 @@ install_project_native_agent() {
   fi
 }
 
-install_cursor() {
+preflight_cursor() {
   local rules_dir="$project_dir/.cursor/rules"
   local skill src dest
 
   for skill in "${skills[@]}"; do
     src="$ROOT_DIR/skills/$skill/agents/cursor.mdc"
     dest="$rules_dir/$skill.mdc"
+    [[ -f "$src" ]] || { echo "Missing Cursor config: $src" >&2; return 1; }
+    preflight_managed_file_install "$dest" "Cursor rule $skill" "$force"
+  done
+}
 
-    if [[ ! -f "$src" ]]; then
-      echo "Missing Cursor config: $src" >&2
-      return 1
-    fi
+install_cursor() {
+  local rules_dir="$project_dir/.cursor/rules"
+  local skill src dest
 
+  preflight_cursor
+
+  for skill in "${skills[@]}"; do
+    src="$ROOT_DIR/skills/$skill/agents/cursor.mdc"
+    dest="$rules_dir/$skill.mdc"
     install_managed_file "$src" "$dest" "cursor-rule:$skill" "Cursor rule $skill" "$force" "$dry_run"
   done
 }
@@ -236,10 +261,10 @@ EOF_SECTION
   rm -f "$section_file"
 }
 
-install_aider() {
+preflight_aider() {
   local legacy_file="$project_dir/CONVENTIONS.md"
   local dest="$project_dir/AICODEREVIEW.md"
-  local legacy_state config_state generated
+  local legacy_state config_state skill src
 
   legacy_state="$(managed_section_state "$legacy_file" "$LEGACY_SECTION_START" "$LEGACY_SECTION_END")"
   if [[ "$legacy_state" == "corrupt" ]]; then
@@ -253,7 +278,20 @@ install_aider() {
     return 1
   fi
 
+  for skill in "${skills[@]}"; do
+    src="$ROOT_DIR/skills/$skill/agents/aider.md"
+    [[ -f "$src" ]] || { echo "Missing Aider config: $src" >&2; return 1; }
+  done
+
   preflight_managed_file_install "$dest" "Aider conventions" "$force"
+}
+
+install_aider() {
+  local legacy_file="$project_dir/CONVENTIONS.md"
+  local dest="$project_dir/AICODEREVIEW.md"
+  local generated
+
+  preflight_aider
 
   generated="$(mktemp "${TMPDIR:-/tmp}/aicodereview-aider.XXXXXX")"
   build_aider_file "$generated"
@@ -268,6 +306,16 @@ install_aider() {
     "$dry_run"
 
   configure_aider_read
+}
+
+preflight_all_agents() {
+  preflight_native_agent "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
+  preflight_native_agent "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
+  preflight_cursor
+  preflight_project_native_agent "$project_dir/.github/skills" "copilot" "$project_dir/.github/copilot-instructions.md"
+  preflight_project_native_agent "$project_dir/.gemini/skills" "gemini" "$project_dir/GEMINI.md"
+  preflight_project_native_agent "$project_dir/.opencode/skills" "opencode"
+  preflight_aider
 }
 
 project_agents=("cursor" "copilot" "gemini" "opencode" "aider")
@@ -299,6 +347,8 @@ run_project_agents() {
 
 case "$agent" in
   global)
+    preflight_native_agent "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
+    preflight_native_agent "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
     install_native_agent "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
     install_native_agent "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
     ;;
@@ -324,6 +374,7 @@ case "$agent" in
     install_aider
     ;;
   all)
+    preflight_all_agents
     install_native_agent "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
     install_native_agent "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
     run_project_agents
