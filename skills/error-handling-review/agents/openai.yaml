@@ -1,2 +1,4 @@
-name: error-handling-review
-description: Review error handling for silent catches, inconsistent propagation, missing UI error states, untyped errors, and missing boundary handling.
+interface:
+  display_name: "Error Handling Review"
+  short_description: "Run the Error Handling Review workflow"
+  default_prompt: "Use $error-handling-review to apply this workflow to the current repository."

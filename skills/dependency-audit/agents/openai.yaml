@@ -1,3 +1,4 @@
-display_name: Dependency Audit
-short_description: Check for outdated, vulnerable, abandoned, or licence-risky dependencies.
-default_prompt: Use dependency-audit to check for outdated or vulnerable dependencies.
+interface:
+  display_name: "Dependency Audit"
+  short_description: "Run the Dependency Audit workflow"
+  default_prompt: "Use $dependency-audit to apply this workflow to the current repository."

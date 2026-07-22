@@ -1,3 +1,4 @@
-display_name: Test Writer
-short_description: Generate missing unit, integration, or snapshot tests for existing code.
-default_prompt: Use test-writer to generate tests for this code.
+interface:
+  display_name: "Test Writer"
+  short_description: "Run the Test Writer workflow"
+  default_prompt: "Use $test-writer to apply this workflow to the current repository."

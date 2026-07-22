@@ -1,3 +1,4 @@
-display_name: API Design Review
-short_description: Review REST or GraphQL API design, naming, versioning, and contracts.
-default_prompt: Use api-design-review to review my API design.
+interface:
+  display_name: "API Design Review"
+  short_description: "Run the API Design Review workflow"
+  default_prompt: "Use $api-design-review to apply this workflow to the current repository."

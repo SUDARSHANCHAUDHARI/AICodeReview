@@ -1,3 +1,4 @@
-display_name: Review Fixer
-short_description: Apply safe, concrete fixes from review findings.
-default_prompt: Use review-fixer to fix the review findings.
+interface:
+  display_name: "Review Fixer"
+  short_description: "Run the Review Fixer workflow"
+  default_prompt: "Use $review-fixer to apply this workflow to the current repository."

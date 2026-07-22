@@ -1,3 +1,4 @@
-display_name: Security Audit
-short_description: Threat-model driven security and privacy audit.
-default_prompt: Use security-audit on my current changes.
+interface:
+  display_name: "Security Audit"
+  short_description: "Run the Security Audit workflow"
+  default_prompt: "Use $security-audit to apply this workflow to the current repository."

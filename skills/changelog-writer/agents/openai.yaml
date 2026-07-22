@@ -1,3 +1,4 @@
-display_name: Changelog Writer
-short_description: Generate CHANGELOG entries from git commits.
-default_prompt: Use changelog-writer to generate CHANGELOG entries from recent commits.
+interface:
+  display_name: "Changelog Writer"
+  short_description: "Run the Changelog Writer workflow"
+  default_prompt: "Use $changelog-writer to apply this workflow to the current repository."

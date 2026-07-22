@@ -1,2 +1,4 @@
-name: code-smell-detector
-description: Detect code smells including god classes, long methods, dead code, duplicates, magic numbers, and deeply nested conditionals.
+interface:
+  display_name: "Code Smell Detector"
+  short_description: "Run the Code Smell Detector workflow"
+  default_prompt: "Use $code-smell-detector to apply this workflow to the current repository."

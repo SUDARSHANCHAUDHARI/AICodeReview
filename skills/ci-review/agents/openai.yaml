@@ -1,3 +1,4 @@
-display_name: CI Review
-short_description: Review CI/CD pipelines for secret safety, permissions, and supply chain risk.
-default_prompt: Use ci-review to review my CI/CD workflow configuration.
+interface:
+  display_name: "CI Review"
+  short_description: "Run the CI Review workflow"
+  default_prompt: "Use $ci-review to apply this workflow to the current repository."

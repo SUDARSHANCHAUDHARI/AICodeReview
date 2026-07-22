@@ -1,3 +1,4 @@
-display_name: Context Writer
-short_description: Create or refresh PROJECT_CONTEXT.md from real repo inspection.
-default_prompt: Use context-writer to create PROJECT_CONTEXT.md for this repo.
+interface:
+  display_name: "Context Writer"
+  short_description: "Run the Context Writer workflow"
+  default_prompt: "Use $context-writer to apply this workflow to the current repository."
