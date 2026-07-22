@@ -8,8 +8,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "test": "npm run clean && npm run build && node --test tests/node-cli.test.js tests/node-maintenance.test.js",
-    "validate": "npm run build && node bin/aicodereview.js validate",
+    "test": "npm run clean && npm run build && node --test tests/node-cli.test.js tests/node-maintenance.test.js tests/hooks-eval.test.js",
+    "validate": "npm run build && node bin/aicodereview.js validate && node bin/aicodereview.js eval --validate",
     "generate": "npm run build && node bin/aicodereview.js generate --write",
     "pack:check": "npm run clean && npm run build && npm pack --dry-run",
     "prepack": "npm run clean && npm run build",
@@ -26,6 +26,8 @@
     "opencode",
     "aider",
     "skills",
+    "hooks",
+    "evaluation",
     "developer-tools"
   ],
   "author": "SUDARSHANCHAUDHARI",
@@ -45,6 +47,8 @@
     "bin/",
     "dist/",
     "skills/",
+    "hooks/",
+    "evals/",
     "templates/",
     "examples/",
     "README.md",
