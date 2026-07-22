@@ -1,235 +1,198 @@
 # Skill Contributor Guide
 
-This guide covers everything you need to write a new AICodeReview skill and get it accepted.
+This guide explains how to add or change an AICodeReview workflow.
 
----
+## Canonical structure
 
-## Folder structure
+Each workflow lives under `skills/<skill-name>/`:
 
-Every skill lives in `skills/<skill-name>/` and must contain:
-
-```
+```text
 skills/
   <skill-name>/
-    SKILL.md              # canonical definition (prompt + workflow)
+    SKILL.md
     agents/
-      openai.yaml         # OpenAI Codex (Responses API tool definition)
-      cursor.mdc          # Cursor rule (Markdown with MDC frontmatter)
-      copilot.md          # GitHub Copilot (plain Markdown instructions)
-      gemini.md           # Google Gemini (plain Markdown instructions)
-      aider.md            # Aider (plain Markdown conventions)
+      openai.yaml
+      cursor.mdc
+      copilot.md
+      gemini.md
+      aider.md
 ```
 
-All five agent files are required. `./scripts/validate.sh` fails if any are missing.
+`SKILL.md` is the canonical workflow. Claude Code, Codex, GitHub Copilot, Gemini CLI, and OpenCode receive that native skill directory.
 
----
+The files under `agents/` currently serve these roles:
+
+| File | Current role |
+|---|---|
+| `openai.yaml` | Codex product-facing skill metadata |
+| `cursor.mdc` | Cursor project rule |
+| `copilot.md` | Legacy adapter retained temporarily for migration and Phase 1 generation work |
+| `gemini.md` | Legacy adapter retained temporarily for migration and Phase 1 generation work |
+| `aider.md` | Compact Aider conventions used to generate `AICODEREVIEW.md` |
+
+Phase 1 will remove unnecessary manual duplication and generate non-native adapters from `SKILL.md`.
 
 ## SKILL.md frontmatter
 
-`SKILL.md` must start with a YAML frontmatter block:
+Every `SKILL.md` must start with:
 
 ```markdown
 ---
 name: <skill-name>
-description: <one sentence; when to use this skill and what value it provides>
+description: <what the skill does and when an agent should activate it>
 ---
 ```
 
-- `name`: must match the folder name exactly.
-- `description`: used by Claude Code to decide when to suggest this skill.
-  Write it as a `Use when ...` sentence. Keep it under 200 characters.
+Requirements:
 
-After the frontmatter, write the full skill prompt in Markdown. Use `##` sections
-for Workflow, What To Check, and Output.
+- `name` must match the directory name.
+- Use lowercase letters, numbers, and single hyphens.
+- `description` must be specific enough for an agent to select the skill correctly.
+- Keep the description within 1,024 characters.
+- Do not put project secrets or private repository data in reusable skills.
 
----
+Optional resources may be added beside `SKILL.md`:
 
-## Writing effective skill prompts
+```text
+scripts/
+references/
+assets/
+examples/
+```
 
-### 1. Start with inspection, not assumptions
+Reference them explicitly in the workflow.
 
-The first step of every workflow must be to read relevant files before reviewing:
+## Writing effective workflows
+
+### Inspect before judging
+
+Start by reading the relevant repository state:
 
 ```markdown
 ## Workflow
 
-1. Inspect the repo: current path, git status, branch, changed files, relevant diffs.
-2. Read PROJECT_CONTEXT.md, AGENTS.md, and any relevant config files.
-3. Review the changed code in context of the surrounding system.
+1. Inspect the current path, branch, git status, changed files, and relevant diffs.
+2. Read PROJECT_CONTEXT.md, AGENTS.md, README, and nearby implementation and tests.
+3. Review the change in the context of the surrounding system.
 ```
 
-This prevents the model from reviewing a diff without understanding the surrounding code.
+### Focus on evidence
 
-### 2. Be concrete about what to check
+A finding should identify:
 
-Vague guidance produces vague reviews. List specific concerns:
+1. Severity.
+2. File and line.
+3. Observed evidence.
+4. Failure scenario or impact.
+5. Concrete fix direction.
+6. Relevant test gap.
 
-```markdown
-## What To Check
+Do not report a defect when the necessary implementation was not inspected.
 
-- SQL queries: look for N+1 patterns, missing indexes, unbounded result sets.
-- Error handling: every DB call must propagate errors; no silent swallows.
-- Migrations: backward-compatible? Down migration present?
-```
-
-### 3. Define the output format explicitly
-
-Use the standard severity format so findings are consistent across skills:
-
-```markdown
-## Output
-
-Start with findings, ordered by severity.
-
-**[P0]** `path/to/file.ext:123` - Short title
-Explanation and concrete fix direction.
-
-**[P1]** `path/to/file.ext:45` - Short title
-...
-```
-
-Severity guide:
+### Use the shared severity model
 
 | Level | Meaning |
-|-------|---------|
-| P0 | Must fix before merge/release: data loss, security breach, crash, broken core workflow |
-| P1 | Should fix: likely production bug, significant regression, missing critical test |
-| P2 | Useful fix: maintainability, edge case, minor performance risk |
-| P3 | Optional polish: mention sparingly, never block a merge on P3 alone |
+|---|---|
+| P0 | Must fix before merge or release: security breach, data loss, crash, or broken core workflow |
+| P1 | Should fix: likely production bug, significant regression, or missing critical coverage |
+| P2 | Useful fix: edge case, maintainability risk, or minor performance problem |
+| P3 | Optional polish; use sparingly |
 
-### 4. Do not take destructive actions
+### Keep review skills read-only
 
-Every skill prompt must end with or imply this constraint:
+Review and audit skills must not edit files, push changes, publish artifacts, or alter repository settings unless the user explicitly asks.
 
-> Do not edit files, push, publish, or change repo settings unless the user explicitly
-> asks for that action.
+Generation and fixer skills must still avoid ambiguous or destructive changes.
 
----
+## Adapter guidance
 
-## Agent file formats
+### Native Agent Skills
 
-### openai.yaml
+Do not create separate Copilot, Gemini, or OpenCode prompt copies for new behavior. Their current installers copy the canonical skill directory to:
 
-Follows the OpenAI Responses API tool definition schema:
-
-```yaml
-name: <skill-name>
-description: <same one-liner as SKILL.md>
-parameters:
-  type: object
-  properties: {}
-  required: []
-instructions: |
-  <full skill prompt, same content as SKILL.md body>
+```text
+.github/skills/<skill-name>/
+.gemini/skills/<skill-name>/
+.opencode/skills/<skill-name>/
 ```
 
-### cursor.mdc
+Claude Code and Codex use their global skill locations.
 
-Cursor rules use Markdown with an MDC YAML frontmatter block:
+### Cursor
 
-```
+`cursor.mdc` uses MDC frontmatter:
+
+```markdown
 ---
-description: <same one-liner>
-globs:
-  - "**/*.ext"
+description: <specific trigger description>
+globs: []
 alwaysApply: false
 ---
 
-<full skill prompt>
+<compact workflow>
 ```
 
-- `globs`: file patterns that trigger this rule automatically. Use `**/*` for
-  skills that apply to any file, or limit to relevant extensions.
-- `alwaysApply: false` is correct for most skills; set `true` only for skills
-  that should run on every edit (e.g., a security scan).
+Use `alwaysApply: false` for on-demand review workflows. Add globs only when the rule is genuinely file-type-specific.
 
-### copilot.md
+### Aider
 
-Plain Markdown. No special format. GitHub Copilot reads this file as context.
+`aider.md` should be a compact convention, not a full duplicate of a large skill. All Aider adapters are combined into the generated `AICODEREVIEW.md` file.
 
-Write the skill prompt as-is. The install script wraps all copilot.md files inside
-an AICodeReview section marker in `.github/copilot-instructions.md`:
+### OpenAI metadata
 
-```
-# >>> AICodeReview START <<<
-<content of all copilot.md files concatenated>
-# >>> AICodeReview END <<<
-```
+The repository currently contains legacy top-level fields in `openai.yaml`. Phase 1 will migrate these files to the official nested `interface:` format. Until that migration is complete, keep new files consistent with the existing repository and treat validation warnings as known debt.
 
-Everything outside the markers is preserved on update or uninstall. Do not include
-the markers in your copilot.md file — they are added automatically.
+## Adding a skill
 
-### gemini.md
+1. Create `skills/<skill-name>/SKILL.md`.
+2. Add the required files under `skills/<skill-name>/agents/`.
+3. Run validation.
+4. Run all behavioral tests.
+5. Update README and CHANGELOG when the public skill inventory changes.
 
-Same as copilot.md. Plain Markdown, no markers. The install script injects it into
-`GEMINI.md` inside the AICodeReview section.
+The maintenance scripts discover skill directories dynamically. Do not add the skill name to hard-coded shell arrays.
 
-### aider.md
-
-Same as copilot.md. Plain Markdown, injected into `CONVENTIONS.md`.
-
----
-
-## Adding a skill to install.sh and uninstall.sh
-
-Both files contain a `skills=(...)` array. Add the new skill name (the folder name)
-in alphabetical order:
-
-```bash
-skills=(
-  "accessibility-audit"
-  "api-design-review"
-  "your-new-skill"      # <-- add here
-  ...
-)
-```
-
-The arrays in both files must be identical. `./scripts/validate.sh` checks that
-every skill folder is referenced in both files.
-
----
-
-## Running validation before you submit
+## Validation
 
 ```bash
 ./scripts/validate.sh
 ```
 
-This checks:
+Validation checks:
 
-- `install.sh` and `uninstall.sh` have no shell syntax errors.
-- Every skill folder has `SKILL.md` with valid frontmatter.
-- Every skill folder has all five agent files.
-- Every skill folder is referenced in both `install.sh` and `uninstall.sh`.
+- Shell syntax.
+- Skill directory naming.
+- `SKILL.md` frontmatter.
+- Required adapter files.
+- Native Copilot, Gemini, and OpenCode installation paths.
+- Dynamic skill discovery.
+- Known metadata migration warnings.
 
-Fix all failures before opening a PR. The PR checklist requires `validate.sh` to pass.
-
----
-
-## Running tests
+## Tests
 
 ```bash
 ./tests/run-all.sh
 ```
 
-Runs all test suites in `tests/test-*.sh`. All suites must pass.
+Tests must cover behavior, not only file existence. For installer changes, include scenarios for:
 
----
+- New install.
+- Managed update.
+- Unmanaged conflict.
+- Backup preservation.
+- Legacy migration.
+- Corrupt migration markers.
+- Uninstall ownership.
+- Dry-run behavior.
+- User configuration preservation.
 
-## Naming conventions
+## Common mistakes
 
-- Use kebab-case for folder names: `api-design-review`, not `ApiDesignReview`.
-- Keep names short and specific: `graphql-review` not `graphql-schema-and-resolver-review`.
-- Suffix with `-review` for review skills, `-audit` for audit/compliance skills,
-  `-writer` for generation skills, `-planner` for planning/suggestion skills.
-
----
-
-## Common mistakes to avoid
-
-- Leaving a `...` placeholder in any agent file — every file must be complete.
-- Forgetting to add the skill to both `install.sh` AND `uninstall.sh`.
-- Writing `alwaysApply: true` in cursor.mdc for a skill that is only useful on demand.
-- Including AICodeReview section markers in copilot.md / gemini.md / aider.md —
-  the install script adds them; duplicates will break idempotent updates.
-- Using absolute paths in prompts — the skill runs in different repo roots.
+- Treating persistent instructions as equivalent to on-demand skills.
+- Adding a new hard-coded skill list.
+- Overwriting an unmanaged destination.
+- Removing a file without checking its ownership marker.
+- Duplicating a top-level `read` key in `.aider.conf.yml`.
+- Leaving Copilot or Gemini legacy sections after a successful native migration.
+- Writing vague prompts that produce style commentary instead of evidence-based findings.
+- Using absolute paths in reusable skills.
