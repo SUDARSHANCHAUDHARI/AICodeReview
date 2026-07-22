@@ -3,12 +3,25 @@
 
 const { mkdirSync, readFileSync, writeFileSync } = require('node:fs');
 const { spawnSync } = require('node:child_process');
-const { join } = require('node:path');
+const { isAbsolute, join, resolve } = require('node:path');
+
+function gitResult(args) {
+  return spawnSync('git', args, { cwd: process.cwd(), encoding: 'utf8' });
+}
 
 function git(args) {
-  const result = spawnSync('git', args, { cwd: process.cwd(), encoding: 'utf8' });
+  const result = gitResult(args);
   if (result.error) return `unavailable: ${result.error.message}`;
   return `${result.stdout || ''}${result.stderr || ''}`.trim() || '(clean)';
+}
+
+function reportDirectory() {
+  const result = gitResult(['rev-parse', '--git-dir']);
+  if (!result.error && result.status === 0 && result.stdout.trim()) {
+    const gitDir = result.stdout.trim();
+    return join(isAbsolute(gitDir) ? gitDir : resolve(process.cwd(), gitDir), 'aicodereview', 'reports');
+  }
+  return join(process.cwd(), '.aicodereview', 'reports');
 }
 
 function input() {
@@ -22,7 +35,7 @@ function input() {
 }
 
 function report(event, payload) {
-  const directory = join(process.cwd(), '.aicodereview', 'reports');
+  const directory = reportDirectory();
   mkdirSync(directory, { recursive: true });
   const timestamp = new Date().toISOString();
   const branch = git(['branch', '--show-current']);
