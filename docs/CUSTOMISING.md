@@ -8,24 +8,17 @@ Use reusable skills for cross-project behavior and `PROJECT_CONTEXT.md` for repo
 
 ```text
 skills/<skill-name>/
-  SKILL.md
-  agents/
-    openai.yaml
-    cursor.mdc
-    copilot.md
-    gemini.md
-    aider.md
+├── SKILL.md
+└── agents/
+    └── openai.yaml
 ```
 
-Current roles:
-
 - `SKILL.md` is installed natively for Claude Code, Codex, GitHub Copilot, Gemini CLI, and OpenCode.
-- `openai.yaml` contains Codex-facing metadata pending Phase 1 standardization.
-- `cursor.mdc` is the Cursor rule adapter.
-- `aider.md` is compact source content for the generated `AICODEREVIEW.md` file.
-- `copilot.md` and `gemini.md` remain temporarily for legacy migration and will be removed or generated in Phase 1.
+- `openai.yaml` is generated interface metadata.
+- Cursor rules are generated from `SKILL.md` during installation.
+- Aider receives one generated `AICODEREVIEW.md` built from all canonical skills.
 
-Do not add new Copilot or Gemini behavior only to their legacy Markdown adapters. Native agents must receive the behavior through `SKILL.md`.
+Do not add `cursor.mdc`, `copilot.md`, `gemini.md`, or `aider.md` to a skill directory.
 
 ## Add project rules
 
@@ -43,7 +36,7 @@ Skills read this file when present.
 
 ## Change a workflow
 
-Edit the relevant `SKILL.md` and keep the workflow evidence-based:
+Edit only the relevant `SKILL.md`:
 
 ```markdown
 ## Workflow
@@ -54,7 +47,7 @@ Edit the relevant `SKILL.md` and keep the workflow evidence-based:
 4. Identify missing verification.
 ```
 
-Review and audit skills must remain read-only unless the user explicitly requests changes.
+Review and audit workflows remain read-only unless the user explicitly requests changes.
 
 ## Add a new skill
 
@@ -62,16 +55,10 @@ Create:
 
 ```text
 skills/my-skill/
-  SKILL.md
-  agents/
-    openai.yaml
-    cursor.mdc
-    copilot.md
-    gemini.md
-    aider.md
+└── SKILL.md
 ```
 
-Minimum `SKILL.md`:
+Minimum content:
 
 ```markdown
 ---
@@ -89,18 +76,43 @@ description: Use when the agent should perform this specific workflow.
 4. Report what changed and what remains.
 ```
 
-The installer discovers the directory automatically. Do not add a hard-coded skill name to install, uninstall, inventory, or health scripts.
+Generate the OpenAI metadata:
+
+```bash
+python3 scripts/skill_artifacts.py sync-openai --write
+```
+
+The installer discovers the new directory automatically. Do not edit a hard-coded inventory.
 
 Run:
 
 ```bash
+python3 scripts/skill_artifacts.py validate
+python3 scripts/skill_artifacts.py sync-openai --check
 ./scripts/validate.sh
 ./tests/run-all.sh
 ```
 
+## Preview generated adapters
+
+Cursor:
+
+```bash
+python3 scripts/skill_artifacts.py render-cursor \
+  --skill my-skill \
+  --output /tmp/my-skill.mdc
+```
+
+Aider:
+
+```bash
+python3 scripts/skill_artifacts.py render-aider \
+  --output /tmp/AICODEREVIEW.md
+```
+
 ## Add an integration
 
-Before implementing a new agent, determine its actual capability:
+Before implementing a new agent, identify its actual capability:
 
 - Native on-demand skill directory
 - Project rule
@@ -108,7 +120,7 @@ Before implementing a new agent, determine its actual capability:
 - Convention file
 - Lifecycle hook
 
-Prefer a native on-demand skill when supported.
+Prefer native on-demand skills when supported.
 
 A complete integration requires:
 
@@ -119,8 +131,9 @@ A complete integration requires:
 5. Unmanaged-conflict backups.
 6. Safe uninstall.
 7. Migration from any previous adapter.
-8. Behavioral tests.
-9. Accurate documentation.
+8. Full preflight before combined installation.
+9. Behavioral tests.
+10. Accurate documentation.
 
 Do not claim that rules, persistent instructions, conventions, and hooks are equivalent to skills.
 
@@ -129,5 +142,5 @@ Do not claim that rules, persistent instructions, conventions, and hooks are equ
 - Keep behavior changes focused.
 - Update documentation when a skill name, path, or capability changes.
 - Add an entry under `Unreleased` in `CHANGELOG.md`.
-- Test dry-run, new install, managed update, unmanaged conflict, migration, and uninstall behavior.
+- Test generation, dry-run, new install, managed update, unmanaged conflict, migration, and uninstall behavior.
 - Never put private project details in reusable skills.
