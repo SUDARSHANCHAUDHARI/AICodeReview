@@ -13,9 +13,9 @@ skills/<skill-name>/
     └── openai.yaml
 ```
 
-`SKILL.md` is the only workflow source. Claude Code, Codex, GitHub Copilot, Gemini CLI, and OpenCode receive that native directory.
+`SKILL.md` is the only workflow source. Claude Code, Codex, GitHub Copilot, Gemini CLI, and OpenCode receive that native directory. Aider receives the same canonical skill files under `.aicodereview/skills/` for selective `/read` loading.
 
-`agents/openai.yaml` is generated product metadata. Cursor rules and Aider conventions are generated at installation time.
+`agents/openai.yaml` is generated product metadata. Cursor rules and the compact Aider catalog are generated at installation time.
 
 Never add these obsolete duplicate adapters:
 
@@ -150,16 +150,28 @@ alwaysApply: false
 
 Do not maintain a separate Cursor workflow copy.
 
-## Aider generation
+## Aider generation and loading
 
-All canonical skills are combined into one generated conventions file:
+The renderer creates a compact workflow catalog:
 
 ```bash
 python3 scripts/skill_artifacts.py render-aider \
   --output /tmp/AICODEREVIEW.md
 ```
 
-The installer writes this file and configures `.aider.conf.yml` only when doing so will not create a duplicate `read` key.
+The catalog must remain small. It lists workflow names and descriptions and explains how to load one full skill:
+
+```text
+/read .aicodereview/skills/code-review/SKILL.md
+```
+
+The installer:
+
+1. Writes the compact `AICODEREVIEW.md` catalog.
+2. Copies canonical skill directories to `.aicodereview/skills/` with ownership markers.
+3. Adds the catalog to `.aider.conf.yml` only when doing so does not create a duplicate `read` key.
+
+Do not combine all full workflow bodies into the catalog. That would load unnecessary context into every Aider session.
 
 ## Adding a skill
 
@@ -182,6 +194,7 @@ Installer changes must preserve these guarantees:
 - Combined multi-agent commands preflight every adapter before writing.
 - Generated artifact validation happens before installation.
 - Aider configuration never gains a duplicate top-level `read` key.
+- Unmanaged Aider skill directories remain untouched during uninstall.
 
 ## Validation
 
@@ -199,7 +212,7 @@ Validation checks:
 - Absence of obsolete duplicated adapters.
 - Native integration paths.
 - Dynamic skill discovery.
-- Generated Cursor and Aider behavior.
+- Generated Cursor rules and compact Aider catalog behavior.
 
 ## Tests
 
@@ -215,6 +228,7 @@ Behavioral tests should cover:
 - Unmanaged conflict and backup preservation.
 - Legacy migration and corrupt markers.
 - Multi-agent partial-install prevention.
+- Selective Aider workflow installation and cleanup.
 - Dry-run behavior.
 - Uninstall ownership.
 - User configuration preservation.
@@ -223,6 +237,7 @@ Behavioral tests should cover:
 
 - Adding a second workflow source outside `SKILL.md`.
 - Hand-maintaining Cursor, Copilot, Gemini, or Aider prompt copies.
+- Embedding all Aider workflows into the auto-loaded catalog.
 - Forgetting to regenerate OpenAI metadata.
 - Adding a hard-coded skill list.
 - Overwriting an unmanaged destination.
