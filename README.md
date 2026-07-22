@@ -2,7 +2,7 @@
 
 Portable code-review workflows for multiple AI coding agents.
 
-AICodeReview provides a canonical `SKILL.md` for each workflow and adapter files for agents that do not yet consume the same native format. The capability is not identical on every agent, so the support matrix below distinguishes native skills, project rules, and persistent instruction files.
+AICodeReview keeps each workflow in a canonical `SKILL.md`. Agents that support the open Agent Skills format receive native, on-demand skills. Cursor receives project rules, while Aider receives a generated conventions file because it does not provide the same skill-loading model.
 
 ## Skills
 
@@ -40,20 +40,21 @@ AICodeReview provides a canonical `SKILL.md` for each workflow and adapter files
 | `tech-debt-audit` | Find and prioritize TODOs, deprecated APIs, untested critical paths, and dead flags |
 | `onboarding-writer` | Generate `ONBOARDING.md` from actual repository inspection |
 
-The installer discovers skill directories dynamically. Adding a skill no longer requires updating separate hard-coded arrays in the maintenance scripts.
+The installer discovers skill directories dynamically. Adding a skill does not require updating separate hard-coded arrays.
 
 ## Agent support
 
-| Agent | Current adapter | Install target | Behavior |
+| Agent | Adapter | Install target | Behavior |
 |---|---|---|---|
 | Claude Code | Native Agent Skill | `~/.claude/skills/` | Loaded on demand from `SKILL.md` |
 | OpenAI Codex | Native Agent Skill | `~/.codex/skills/` | Loaded on demand from `SKILL.md` |
-| Cursor | Agent-requested project rule | `<project>/.cursor/rules/` | Cursor decides when the `.mdc` rule is relevant, or the user invokes it |
-| GitHub Copilot | Legacy combined instructions | `<project>/.github/copilot-instructions.md` | Persistent repository instructions; native Copilot skills are planned for Phase 0B |
-| Gemini CLI | Legacy combined context | `<project>/GEMINI.md` | Loaded as persistent context; native Gemini skills are planned for Phase 0B |
-| Aider | Conventions file | `<project>/CONVENTIONS.md` | Must be loaded with `/read` or configured in `.aider.conf.yml` |
+| GitHub Copilot | Native Agent Skill | `<project>/.github/skills/` | Discovered and activated when relevant |
+| Gemini CLI | Native Agent Skill | `<project>/.gemini/skills/` | Discovered and activated through `activate_skill` |
+| OpenCode | Native Agent Skill | `<project>/.opencode/skills/` | Loaded on demand through the native skill tool |
+| Cursor | Project rule | `<project>/.cursor/rules/` | Cursor applies or exposes the generated `.mdc` rule |
+| Aider | Conventions file | `<project>/AICODEREVIEW.md` | Loaded through `.aider.conf.yml` when it is safe to configure automatically |
 
-The current adapters provide the same review intent, but they are not technically equivalent. Native skills use on-demand discovery. Rules and persistent context files follow the behavior of their host agent.
+Native skills are not copied into persistent Copilot or Gemini instruction files. This avoids loading all review workflows into every session.
 
 ## Install
 
@@ -64,7 +65,7 @@ git clone https://github.com/SUDARSHANCHAUDHARI/AICodeReview.git
 cd AICodeReview
 ```
 
-Install Claude Code and Codex native skills:
+Install Claude Code and Codex:
 
 ```bash
 ./install.sh
@@ -80,13 +81,14 @@ Install one global agent:
 Install a project-scoped adapter:
 
 ```bash
-./install.sh --agent cursor  --project /path/to/project
-./install.sh --agent copilot --project /path/to/project
-./install.sh --agent gemini  --project /path/to/project
-./install.sh --agent aider   --project /path/to/project
+./install.sh --agent cursor   --project /path/to/project
+./install.sh --agent copilot  --project /path/to/project
+./install.sh --agent gemini   --project /path/to/project
+./install.sh --agent opencode --project /path/to/project
+./install.sh --agent aider    --project /path/to/project
 ```
 
-Install all current adapters:
+Install every current adapter:
 
 ```bash
 ./install.sh --agent all --project /path/to/project
@@ -101,31 +103,33 @@ Preview changes:
 Update an existing managed installation:
 
 ```bash
-./install.sh --agent claude --force
+./install.sh --agent copilot --project /path/to/project --force
 ```
 
-### Installation safety
+## Migration from legacy adapters
 
-AICodeReview writes ownership markers beside native skills and Cursor rules.
+Older versions appended all Copilot workflows to `.github/copilot-instructions.md`, all Gemini workflows to `GEMINI.md`, and all Aider workflows to `CONVENTIONS.md`.
 
-When `--force` encounters a conflicting path that is not marked as AICodeReview-managed, it moves the existing content to a timestamped backup before installing. It does not silently delete the existing path.
+The current installer:
 
-Combined Copilot, Gemini, and Aider files are modified only when their AICodeReview start and end markers are absent or form exactly one valid pair. Corrupt or duplicate markers cause the operation to stop without changing the file.
+1. Validates that the legacy AICodeReview marker pair is complete and unique.
+2. Installs the native replacement.
+3. Removes only the managed legacy section.
+4. Preserves every line outside the managed markers.
 
-## Aider activation
+Corrupt markers stop migration before native files are changed.
 
-Creating `CONVENTIONS.md` does not automatically guarantee that Aider reads it. Load it in the session:
+## Installation safety
 
-```text
-/read CONVENTIONS.md
-```
+AICodeReview writes ownership markers into native skill directories and beside generated files.
 
-Or add it to the project’s `.aider.conf.yml`:
+When `--force` encounters a conflicting path that is not marked as AICodeReview-managed, it moves that content to a timestamped backup before installing. Uninstall removes only managed paths.
 
-```yaml
-read:
-  - CONVENTIONS.md
-```
+For Aider:
+
+- If `.aider.conf.yml` does not have a `read` setting, the installer adds a managed block for `AICODEREVIEW.md`.
+- If a user-managed `read` setting already exists, the installer leaves it unchanged and asks the user to add `AICODEREVIEW.md` manually.
+- It never creates a duplicate top-level `read` key.
 
 ## Use
 
@@ -140,7 +144,7 @@ Use architecture-review to inspect dependency direction and layer violations.
 Use test-writer to add tests grounded in the repository's current test style.
 ```
 
-Cursor rules are also available through Cursor’s rule picker. Copilot, Gemini, and Aider use their generated project instruction files.
+For Gemini CLI, run `/skills reload` after adding or updating workspace skills.
 
 ## Per-project context
 
@@ -150,32 +154,30 @@ Copy the context template into the repository being reviewed:
 cp templates/PROJECT_CONTEXT.md /path/to/project/PROJECT_CONTEXT.md
 ```
 
-Document the project stack, architecture, conventions, verification commands, and known migration constraints. Skills read this file when present so findings remain grounded in the real repository.
-
-Examples are available under `examples/`.
+Document the project stack, architecture, conventions, verification commands, and migration constraints. Skills read this file when present.
 
 ## Maintenance
 
 ```bash
 ./update.sh
-./list-installed.sh
+./update.sh --project /path/to/project
 ./list-installed.sh --project /path/to/project
-./check-health.sh
 ./check-health.sh --project /path/to/project
 ```
 
-`list-installed.sh` reports `installed`, `unmanaged`, or `missing` for every discovered skill.
+`list-installed.sh` reports `installed`, `legacy`, `unmanaged`, or `missing`.
 
-`check-health.sh` verifies ownership markers, compares installed native skill files and Cursor rules with the source, and detects stale or corrupt combined sections.
+`check-health.sh` verifies current skill content, ownership markers, incomplete migrations, Aider activation, and corrupt marker states.
 
 ## Uninstall
 
 ```bash
 ./uninstall.sh --agent claude
+./uninstall.sh --agent copilot --project /path/to/project
 ./uninstall.sh --agent all --project /path/to/project
 ```
 
-Native skill directories and Cursor rules are removed only when an AICodeReview ownership marker is present. Unmanaged paths are left untouched.
+User-owned paths and configuration remain untouched.
 
 ## Validate and test
 
@@ -184,7 +186,7 @@ Native skill directories and Cursor rules are removed only when an AICodeReview 
 ./tests/run-all.sh
 ```
 
-Validation checks skill naming and frontmatter, required adapter files, shell syntax, and use of the shared dynamic inventory. GitHub Actions runs validation and tests on Ubuntu and macOS.
+The behavioral tests exercise real installation, migration, backup, inventory, Aider configuration, and uninstall scenarios. GitHub Actions runs validation and tests on Ubuntu and macOS.
 
 ## Design principles
 
@@ -194,21 +196,18 @@ Validation checks skill naming and frontmatter, required adapter files, shell sy
 - Keep review workflows read-only unless the user explicitly requests changes.
 - Prefer small, verifiable fixes over broad rewrites.
 - Keep secrets, keys, signing files, private data, and `.env` values out of context files.
-- Describe agent capability accurately instead of treating skills, rules, instructions, and hooks as interchangeable.
+- Describe skills, rules, conventions, and hooks accurately instead of treating them as interchangeable.
 
 ## Roadmap
 
-Phase 0A strengthens inventory, installation ownership, uninstall safety, marker validation, documentation, and CI.
-
-Phase 0B will replace the legacy Copilot and Gemini combined-context adapters with their native Agent Skills formats while preserving a migration path for existing installations.
-
-Phase 1 will standardize skill metadata and generate non-native adapters from canonical skill content.
-
-Phase 2 will replace the Bash-first installer with a cross-platform CLI and add Windows coverage.
+- **Phase 0:** Inventory, installation ownership, migration safety, native Copilot and Gemini support, OpenCode support, Aider activation, and CI.
+- **Phase 1:** Standardize skill metadata and generate non-native adapters from canonical skill content.
+- **Phase 2:** Replace the Bash-first installer with a cross-platform CLI and add Windows coverage.
+- **Phase 3:** Add optional hooks and behavioral evaluation repositories.
 
 ## Contributing
 
-See `SKILL_GUIDE.md` for the current contributor workflow. Agent metadata standardization is part of Phase 1, so contributors should also run validation and review its warnings before submitting changes.
+See `SKILL_GUIDE.md`.
 
 ## License
 
