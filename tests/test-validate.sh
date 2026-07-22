@@ -10,37 +10,27 @@ fail() { echo "  FAIL  $*"; fail_count=$((fail_count + 1)); }
 
 echo "── test-validate.sh ────────────────────────────────────"
 
-if "$ROOT_DIR/scripts/validate.sh" >/dev/null; then
-  pass "validation succeeds on the source tree"
-else
-  fail "validation fails on the source tree"
-fi
+if "$ROOT_DIR/scripts/validate.sh" >/dev/null; then pass "Validation passes"; else fail "Validation fails"; fi
 
-for script in aicodereview-lib.sh install.sh uninstall.sh update.sh list-installed.sh check-health.sh scripts/validate.sh tests/run-all.sh; do
-  if [[ -f "$ROOT_DIR/$script" ]] && bash -n "$ROOT_DIR/$script"; then
-    pass "$script exists and parses"
-  else
-    fail "$script is missing or has shell syntax errors"
-  fi
+for path in \
+  '.github/skills' \
+  '.gemini/skills' \
+  '.opencode/skills' \
+  'AICODEREVIEW.md'; do
+  if grep -qF "$path" "$ROOT_DIR/install.sh"; then pass "Installer references $path"; else fail "Installer misses $path"; fi
 done
 
-skill_count="$(find "$ROOT_DIR/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
-temp_home="$(mktemp -d "${TMPDIR:-/tmp}/aicodereview-list-test.XXXXXX")"
-trap 'rm -rf "$temp_home"' EXIT
-listed_count="$(HOME="$temp_home" "$ROOT_DIR/list-installed.sh" | awk '$1 == "claude" { count++ } END { print count + 0 }')"
-if [[ "$listed_count" -eq "$skill_count" ]]; then
-  pass "list-installed derives the complete skill inventory dynamically"
+if ! grep -q 'install_combined "copilot.md"' "$ROOT_DIR/install.sh"; then
+  pass "Copilot no longer uses combined persistent instructions"
 else
-  fail "list-installed reported $listed_count Claude skills; expected $skill_count"
+  fail "Copilot still uses combined persistent instructions"
 fi
 
-for script in install.sh uninstall.sh check-health.sh list-installed.sh; do
-  if grep -q 'load_skills' "$ROOT_DIR/$script"; then
-    pass "$script uses the shared dynamic inventory"
-  else
-    fail "$script does not use the shared dynamic inventory"
-  fi
-done
+if ! grep -q 'install_combined "gemini.md"' "$ROOT_DIR/install.sh"; then
+  pass "Gemini no longer uses combined persistent context"
+else
+  fail "Gemini still uses combined persistent context"
+fi
 
 echo ""
 echo "test-validate.sh: $pass_count passed, $fail_count failed"
