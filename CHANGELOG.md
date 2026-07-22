@@ -4,6 +4,17 @@ All notable changes to AICodeReview will be documented here.
 
 ## Unreleased
 
+### Phase 2A cross-platform CLI
+
+- Added a TypeScript CLI for install, uninstall, repository validation, and OpenAI metadata generation.
+- Replaced the npm entrypoint's Bash delegation with a compiled Node.js command.
+- Preserved backward-compatible `--agent` and `--project` usage while adding explicit subcommands.
+- Ported ownership markers, unmanaged-conflict backups, legacy marker validation, all-agent preflight, native skill installation, generated Cursor rules, and selective Aider loading to Node.js.
+- Added cross-platform behavior tests covering migration, backups, preflight, generated artifacts, and ownership-aware uninstall.
+- Added Ubuntu, macOS, and Windows Node CLI jobs while retaining shell compatibility tests on Ubuntu and macOS.
+- Added npm build, test, validate, generate, and prepack lifecycle commands.
+- Retained Bash and Python maintenance tools temporarily; list, health, and update move to Node in Phase 2B.
+
 ### Phase 1 skill standardization
 
 - Migrated all 31 `agents/openai.yaml` files to the nested `interface:` structure.
