@@ -2,25 +2,25 @@
 
 Portable code-review workflows for multiple AI coding agents.
 
-AICodeReview keeps every workflow in one canonical `SKILL.md`. Native agents receive that directory directly. Cursor rules, a compact Aider catalog, and OpenAI metadata are generated from the same source.
+Every workflow has one canonical `SKILL.md`. Native agents receive that directory directly. Cursor rules, a compact Aider catalog, and OpenAI metadata are generated from the same source.
 
-## What is included
+## Included
 
-The repository contains 31 workflows covering general review, security, architecture, APIs, databases, CI, Docker, Android, iOS, web, Flutter, React Native, testing, performance, accessibility, release readiness, refactoring, technical debt, documentation, and onboarding.
+AICodeReview contains 31 workflows covering general review, security, architecture, APIs, databases, CI, Docker, Android, iOS, web, Flutter, React Native, testing, performance, accessibility, release readiness, refactoring, technical debt, documentation, and onboarding.
 
 The CLI discovers skill directories dynamically. Adding a skill does not require editing a hard-coded inventory.
 
 ## Agent support
 
-| Agent | Adapter | Install target | Behavior |
-|---|---|---|---|
-| Claude Code | Native Agent Skill | `~/.claude/skills/` | Loaded on demand from `SKILL.md` |
-| OpenAI Codex | Native Agent Skill | `~/.codex/skills/` | Loaded on demand from `SKILL.md` |
-| GitHub Copilot | Native Agent Skill | `<project>/.github/skills/` | Discovered when relevant |
-| Gemini CLI | Native Agent Skill | `<project>/.gemini/skills/` | Activated through the native skill system |
-| OpenCode | Native Agent Skill | `<project>/.opencode/skills/` | Loaded through the native skill tool |
-| Cursor | Generated rule | `<project>/.cursor/rules/` | Generated from `SKILL.md` |
-| Aider | Catalog plus selective skills | `<project>/AICODEREVIEW.md` and `.aicodereview/skills/` | Workflows are loaded individually with `/read` |
+| Agent | Adapter | Install target |
+|---|---|---|
+| Claude Code | Native Agent Skill | `~/.claude/skills/` |
+| OpenAI Codex | Native Agent Skill | `~/.codex/skills/` |
+| GitHub Copilot | Native Agent Skill | `<project>/.github/skills/` |
+| Gemini CLI | Native Agent Skill | `<project>/.gemini/skills/` |
+| OpenCode | Native Agent Skill | `<project>/.opencode/skills/` |
+| Cursor | Generated rule | `<project>/.cursor/rules/` |
+| Aider | Catalog plus selective skills | `<project>/AICODEREVIEW.md` and `.aicodereview/skills/` |
 
 Skills, rules, conventions, extensions, and hooks are different capabilities. The repository does not describe them as equivalent.
 
@@ -43,38 +43,26 @@ npm install
 npm run build
 ```
 
-## Install workflows
-
-Install Claude Code and Codex:
+## Workflow installation
 
 ```bash
 aicodereview install
-```
-
-Install project integrations:
-
-```bash
 aicodereview install --agent cursor   --project /path/to/project
 aicodereview install --agent copilot  --project /path/to/project
 aicodereview install --agent gemini   --project /path/to/project
 aicodereview install --agent opencode --project /path/to/project
 aicodereview install --agent aider    --project /path/to/project
+aicodereview install --agent all      --project /path/to/project
 ```
 
-Install everything:
-
-```bash
-aicodereview install --agent all --project /path/to/project
-```
-
-Preview or update safely:
+Preview or safely replace managed paths:
 
 ```bash
 aicodereview install --agent all --project /path/to/project --dry-run
 aicodereview install --agent all --project /path/to/project --force
 ```
 
-The flag-only form remains supported:
+The old flag-only form remains supported:
 
 ```bash
 aicodereview --agent claude
@@ -83,12 +71,12 @@ aicodereview --agent claude
 ## Maintenance
 
 ```bash
-aicodereview list --project /path/to/project
+aicodereview list   --project /path/to/project
 aicodereview health --project /path/to/project
 aicodereview update --project /path/to/project
 ```
 
-`list` reports every discovered skill and installation state. `health` detects drift, unmanaged paths, incomplete migration, and corrupt markers. `update` refreshes detected managed integrations from the currently installed package.
+`list` reports every discovered skill and installation state. `health` detects drift, unmanaged paths, incomplete migrations, and corrupt markers. `update` refreshes detected managed integrations from the installed package.
 
 Update the CLI itself through npm:
 
@@ -108,32 +96,25 @@ aicodereview generate --write
 
 ## Optional lifecycle hooks
 
-Hooks are optional. They record deterministic repository state; they do not run an AI review or block the agent.
-
-Install repository hooks for supported hook systems:
+Hooks are optional deterministic automation. They do not call an AI provider, block the agent, or claim to perform a code review.
 
 ```bash
-aicodereview hooks install --agent copilot --project /path/to/project
-aicodereview hooks install --agent gemini  --project /path/to/project
-aicodereview hooks install --agent all     --project /path/to/project
+aicodereview hooks install   --agent copilot --project /path/to/project
+aicodereview hooks install   --agent gemini  --project /path/to/project
+aicodereview hooks install   --agent all     --project /path/to/project
+aicodereview hooks status    --agent all     --project /path/to/project
+aicodereview hooks uninstall --agent all     --project /path/to/project
 ```
 
-Check or remove them:
+Copilot receives `.github/hooks/aicodereview.json` and a Node runner. Gemini receives a local extension under `.aicodereview/gemini-extension/`; link it with the command printed by the installer.
 
-```bash
-aicodereview hooks status    --agent all --project /path/to/project
-aicodereview hooks uninstall --agent all --project /path/to/project
-```
+The hooks record branch, Git status, and `git diff --check` at session start and after the main agent turn. In a Git repository, reports are stored under the repository's Git metadata directory so they cannot be committed accidentally. A non-Git fallback uses the ignored `.aicodereview/reports/` path.
 
-Copilot receives `.github/hooks/aicodereview.json` and a cross-platform Node runner. Gemini receives a local extension under `.aicodereview/gemini-extension/`; link it with the command printed by the installer.
-
-The hooks run at session start and after the main agent turn. They write local reports under `.aicodereview/reports/`, including Git status and `git diff --check`. Reports are ignored by Git.
-
-Hooks are currently provided only for Copilot and Gemini because these integrations have documented lifecycle-hook formats. Other agents still receive their supported skill or rule format without invented hook compatibility.
+Hooks are provided only for Copilot and Gemini because those integrations have documented compatible lifecycle-hook formats.
 
 ## Behavioral evaluations
 
-Installation success does not prove review quality. The `evals/` directory provides seeded defects and a false-positive control.
+Installation success does not prove review quality. The `evals/` directory contains two seeded defects and one false-positive control.
 
 ```bash
 aicodereview eval --list
@@ -143,27 +124,19 @@ aicodereview eval --results results.json
 
 The scorer reports true positives, false positives, false negatives, precision, recall, and severity accuracy. See `evals/README.md` for the result format and fair-comparison rules.
 
-The initial suite covers:
-
-- hardcoded production-shaped secret detection
-- missing object-level authorization
-- a safe authorization implementation that should not produce either finding
-
 Publish behavioral support claims only when reproducible results support them.
 
-## Installation safety
+## Safety guarantees
 
 - Managed directories and generated files receive ownership markers.
 - Unmanaged conflicts stop installation unless `--force` is supplied.
 - Forced replacement moves unmanaged content to timestamped backups.
 - Directory, file, and marker replacement is transactional and rolls back after failure.
 - Corrupt migration markers stop before replacement paths are written.
-- `--agent all` preflights every global and project destination before the first write.
+- `--agent all` preflights every destination before the first write.
 - Uninstall removes only ownership-marked content.
 
 ## Aider activation
-
-The installer writes a compact catalog and managed skill directories under `.aicodereview/skills/`.
 
 ```text
 /read .aicodereview/skills/code-review/SKILL.md
@@ -189,8 +162,6 @@ For Gemini CLI, run `/skills reload` after adding or updating workspace skills.
 cp templates/PROJECT_CONTEXT.md /path/to/project/PROJECT_CONTEXT.md
 ```
 
-Document the actual stack, architecture, verification commands, conventions, and migration constraints.
-
 ## Uninstall workflows
 
 ```bash
@@ -209,16 +180,7 @@ npm run validate
 npm run pack:check
 ```
 
-GitHub Actions is configured to run the Node suite and package inspection on Ubuntu, macOS, and Windows. Repository-only shell compatibility remains checked on Ubuntu and macOS.
-
-## Design principles
-
-- Inspect real files before making claims.
-- Report correctness, security, performance, testing, and operational risk rather than taste.
-- Include severity, evidence, file and line references, impact, and a concrete fix direction.
-- Keep review workflows read-only unless the user explicitly requests changes.
-- Preserve secrets, private data, and user-owned configuration.
-- Measure review behavior instead of treating assertion counts as quality evidence.
+GitHub Actions is configured for Ubuntu, macOS, and Windows. Repository-only shell compatibility remains checked on Ubuntu and macOS.
 
 ## Contributing
 
