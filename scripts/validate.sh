@@ -84,6 +84,7 @@ grep -qF '.github/skills' install.sh || fail "install.sh missing native Copilot 
 grep -qF '.gemini/skills' install.sh || fail "install.sh missing native Gemini skills path"
 grep -qF '.opencode/skills' install.sh || fail "install.sh missing native OpenCode skills path"
 grep -qF 'AICODEREVIEW.md' install.sh || fail "install.sh missing managed Aider conventions file"
+grep -qF 'preflight_all_agents' install.sh || fail "install.sh missing all-agent preflight gate"
 grep -qF '.github/skills' uninstall.sh || fail "uninstall.sh missing native Copilot cleanup"
 grep -qF '.gemini/skills' uninstall.sh || fail "uninstall.sh missing native Gemini cleanup"
 grep -qF '.opencode/skills' uninstall.sh || fail "uninstall.sh missing native OpenCode cleanup"
