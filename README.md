@@ -2,45 +2,45 @@
 
 Portable code-review workflows for multiple AI coding agents.
 
-AICodeReview keeps every workflow in one canonical `SKILL.md`. Native agents receive that directory directly. Cursor rules, a compact Aider catalog, and OpenAI product metadata are generated deterministically from the same source.
+AICodeReview keeps every workflow in one canonical `SKILL.md`. Native agents receive that directory directly. Cursor rules, a compact Aider catalog, and OpenAI product metadata are generated from the same source.
 
 ## Skills
 
 | Skill | What it does |
 |---|---|
 | `code-review` | Review changes for bugs, regressions, security, performance, and missing tests |
-| `security-audit` | Threat-model-driven audit for injection, auth, secrets, data exposure, config, and dependencies |
-| `codebase-explainer` | Explain architecture and data flow for onboarding or returning to a repository |
+| `security-audit` | Audit injection, auth, secrets, data exposure, configuration, and dependencies |
+| `codebase-explainer` | Explain architecture and data flow from repository evidence |
 | `review-fixer` | Apply concrete, low-risk fixes from review findings |
-| `android-review` | Android, Kotlin, KMP, and Compose-focused review |
-| `ios-review` | iOS, macOS, Swift, SwiftUI, and Xcode-focused review |
-| `web-review` | React, Next.js, TypeScript, and Node-focused review |
+| `android-review` | Review Android, Kotlin, KMP, and Compose code |
+| `ios-review` | Review iOS, macOS, Swift, SwiftUI, and Xcode code |
+| `web-review` | Review React, Next.js, TypeScript, and Node code |
 | `release-review` | Check release blockers, privacy, build configuration, and rollout risk |
-| `pr-summary` | Write concise pull request descriptions from local changes |
-| `context-writer` | Create or refresh `PROJECT_CONTEXT.md` from repository inspection |
-| `changelog-writer` | Generate changelog entries from Git commits |
-| `dependency-audit` | Check for outdated, vulnerable, or risky dependencies |
-| `agent-config-review` | Review AI-agent configuration files for secrets, placeholders, and inconsistencies |
-| `backend-review` | Review REST or GraphQL APIs, database access, auth, errors, and service layers |
-| `performance-review` | Review latency, memory, N+1 queries, caching, and rendering bottlenecks |
+| `pr-summary` | Write pull request descriptions from local changes |
+| `context-writer` | Create or refresh `PROJECT_CONTEXT.md` |
+| `changelog-writer` | Generate changelog entries from Git history |
+| `dependency-audit` | Check outdated, vulnerable, or risky dependencies |
+| `agent-config-review` | Review AI-agent configuration for secrets and inconsistencies |
+| `backend-review` | Review APIs, databases, auth, errors, and service layers |
+| `performance-review` | Review latency, memory, N+1 queries, caching, and rendering |
 | `accessibility-audit` | Audit semantics, keyboard navigation, ARIA, contrast, and mobile accessibility |
-| `database-review` | Review schema design, indexes, migrations, query efficiency, and data integrity |
-| `test-writer` | Write unit, integration, and snapshot tests matching the existing test style |
-| `kmp-review` | Review Kotlin Multiplatform expect/actual use and shared/platform boundaries |
-| `docker-review` | Review Dockerfiles and Compose configuration for layers, secrets, images, and health checks |
-| `ci-review` | Review CI/CD pipelines, secrets, caching, test gates, and failure modes |
+| `database-review` | Review schema design, indexes, migrations, and data integrity |
+| `test-writer` | Write tests matching the existing repository style |
+| `kmp-review` | Review Kotlin Multiplatform boundaries and expect/actual use |
+| `docker-review` | Review Dockerfiles and Compose configuration |
+| `ci-review` | Review CI/CD pipelines, secrets, caching, and test gates |
 | `api-design-review` | Review API naming, versioning, auth, errors, idempotency, and pagination |
-| `flutter-review` | Review Flutter and Dart lifecycle, rendering, state, platform channels, and release setup |
-| `refactor-planner` | Plan safe incremental refactors with blast radius, rollback, and feature flags |
-| `architecture-review` | Review dependency direction, circular dependencies, coupling, cohesion, and layer violations |
-| `code-smell-detector` | Find god classes, long methods, feature envy, dead code, duplication, and magic values |
-| `error-handling-review` | Find silent catches, missing UI error states, unsafe retries, and untyped errors |
-| `graphql-review` | Review schemas, resolver N+1 problems, field-level auth, limits, and breaking changes |
-| `react-native-review` | Review JS thread use, bridge calls, lists, leaks, updates, and deep-link security |
-| `tech-debt-audit` | Find and prioritize TODOs, deprecated APIs, untested critical paths, and dead flags |
-| `onboarding-writer` | Generate `ONBOARDING.md` from actual repository inspection |
+| `flutter-review` | Review Flutter and Dart lifecycle, rendering, and release setup |
+| `refactor-planner` | Plan safe incremental refactors |
+| `architecture-review` | Review dependency direction, coupling, cohesion, and layer violations |
+| `code-smell-detector` | Find god classes, long methods, duplication, dead code, and magic values |
+| `error-handling-review` | Find silent catches, missing error states, and unsafe retries |
+| `graphql-review` | Review schemas, N+1 problems, field authorization, and limits |
+| `react-native-review` | Review bridge calls, list performance, leaks, updates, and deep links |
+| `tech-debt-audit` | Prioritize TODOs, deprecated APIs, untested paths, and dead flags |
+| `onboarding-writer` | Generate `ONBOARDING.md` from repository inspection |
 
-The installer discovers skill directories dynamically. Adding a skill does not require editing a hard-coded list.
+The CLI discovers skill directories dynamically. Adding a skill does not require editing a hard-coded list.
 
 ## Agent support
 
@@ -49,148 +49,135 @@ The installer discovers skill directories dynamically. Adding a skill does not r
 | Claude Code | Native Agent Skill | `~/.claude/skills/` | Loaded on demand from `SKILL.md` |
 | OpenAI Codex | Native Agent Skill | `~/.codex/skills/` | Loaded on demand from `SKILL.md` |
 | GitHub Copilot | Native Agent Skill | `<project>/.github/skills/` | Discovered and activated when relevant |
-| Gemini CLI | Native Agent Skill | `<project>/.gemini/skills/` | Discovered and activated through `activate_skill` |
+| Gemini CLI | Native Agent Skill | `<project>/.gemini/skills/` | Activated through the native skill system |
 | OpenCode | Native Agent Skill | `<project>/.opencode/skills/` | Loaded on demand through the native skill tool |
 | Cursor | Generated project rule | `<project>/.cursor/rules/` | Generated from `SKILL.md` during installation |
-| Aider | Catalog plus selective skill files | `<project>/AICODEREVIEW.md` and `<project>/.aicodereview/skills/` | Catalog is auto-loaded; the requested workflow is loaded with `/read` |
+| Aider | Catalog plus selective skills | `<project>/AICODEREVIEW.md` and `<project>/.aicodereview/skills/` | Catalog is loaded normally; workflows are loaded individually with `/read` |
 
-Native skills are not copied into persistent Copilot or Gemini instruction files. Aider does not preload all 31 workflows into every session.
-
-## Canonical structure
-
-```text
-skills/<skill-name>/
-├── SKILL.md
-└── agents/
-    └── openai.yaml
-```
-
-`SKILL.md` is the only workflow source.
-
-`agents/openai.yaml` contains generated product-facing metadata:
-
-```yaml
-interface:
-  display_name: "Code Review"
-  short_description: "Run the Code Review workflow"
-  default_prompt: "Use $code-review to apply this workflow to the current repository."
-```
-
-All metadata strings are quoted. Short descriptions are 25–64 characters, and every default prompt explicitly invokes its skill.
+Native skills are not copied into persistent Copilot or Gemini instructions. Aider does not preload all 31 workflow bodies into every session.
 
 ## Requirements
 
-- Bash
-- Python 3.8 or later
+The published CLI requires **Node.js 18 or later**.
 
-Phase 2 will replace the Bash and Python installer with a cross-platform TypeScript CLI.
+Bash and Python are not runtime requirements. The repository keeps legacy shell utilities only for backward-compatibility testing.
 
 ## Install
+
+From npm:
+
+```bash
+npm install -g aicodereview
+```
+
+From the repository:
 
 ```bash
 git clone https://github.com/SUDARSHANCHAUDHARI/AICodeReview.git
 cd AICodeReview
+npm install
+npm run build
 ```
+
+## CLI
 
 Install Claude Code and Codex:
 
 ```bash
-./install.sh
+aicodereview install
 ```
 
-Install a project-scoped integration:
+Install a project integration:
 
 ```bash
-./install.sh --agent cursor   --project /path/to/project
-./install.sh --agent copilot  --project /path/to/project
-./install.sh --agent gemini   --project /path/to/project
-./install.sh --agent opencode --project /path/to/project
-./install.sh --agent aider    --project /path/to/project
+aicodereview install --agent cursor   --project /path/to/project
+aicodereview install --agent copilot  --project /path/to/project
+aicodereview install --agent gemini   --project /path/to/project
+aicodereview install --agent opencode --project /path/to/project
+aicodereview install --agent aider    --project /path/to/project
 ```
 
-Install every current adapter:
+Install everything:
 
 ```bash
-./install.sh --agent all --project /path/to/project
+aicodereview install --agent all --project /path/to/project
 ```
 
-The all-agent command preflights every destination, generated artifact, and migration marker before writing the first file.
-
-Preview changes:
+Preview without writing:
 
 ```bash
-./install.sh --agent all --project /path/to/project --dry-run
+aicodereview install --agent all --project /path/to/project --dry-run
 ```
 
-Update managed installations:
+Update managed paths while backing up unmanaged conflicts:
 
 ```bash
-./install.sh --agent all --project /path/to/project --force
+aicodereview install --agent all --project /path/to/project --force
 ```
 
-## Generated artifacts
-
-Verify committed OpenAI metadata:
+The old flag-only form remains supported:
 
 ```bash
-python3 scripts/skill_artifacts.py sync-openai --check
+aicodereview --agent claude
 ```
 
-Regenerate it after adding or renaming a skill:
+## Maintenance
+
+List every discovered skill and installation state:
 
 ```bash
-python3 scripts/skill_artifacts.py sync-openai --write
+aicodereview list --project /path/to/project
 ```
 
-Preview one generated Cursor rule:
+Check drift, ownership, incomplete migrations, and corrupt markers:
 
 ```bash
-python3 scripts/skill_artifacts.py render-cursor \
-  --skill code-review \
-  --output /tmp/code-review.mdc
+aicodereview health --project /path/to/project
 ```
 
-Preview the compact Aider catalog:
+Refresh all detected managed integrations from the currently installed package:
 
 ```bash
-python3 scripts/skill_artifacts.py render-aider \
-  --output /tmp/AICODEREVIEW.md
+aicodereview update --project /path/to/project
 ```
 
-Do not create or maintain `cursor.mdc`, `copilot.md`, `gemini.md`, or `aider.md` inside individual skill directories. Validation rejects those obsolete duplicate adapters.
+Update the CLI package itself through the package manager:
 
-## Aider workflow activation
+```bash
+npm install -g aicodereview@latest
+```
 
-The installer writes a compact catalog to `AICODEREVIEW.md` and copies managed skill directories to `.aicodereview/skills/`.
+## Generate and validate
 
-Load only the workflow needed for the current task:
+```bash
+aicodereview validate
+aicodereview generate --check
+aicodereview generate --write
+```
+
+`SKILL.md` is the only workflow source. Validation rejects obsolete `cursor.mdc`, `copilot.md`, `gemini.md`, and `aider.md` copies inside skill directories.
+
+## Installation safety
+
+- Managed directories and generated files receive ownership markers.
+- Unmanaged conflicts stop installation unless `--force` is supplied.
+- `--force` moves unmanaged content to timestamped backups.
+- File and marker replacement is transactional and restores previous content after a failed operation.
+- Corrupt migration markers stop before replacement paths are written.
+- `--agent all` preflights every global and project destination before the first write.
+- Uninstall removes only ownership-marked content.
+
+## Aider activation
+
+The installer writes a compact `AICODEREVIEW.md` catalog and managed skill directories under `.aicodereview/skills/`.
+
+Load one workflow:
 
 ```text
 /read .aicodereview/skills/code-review/SKILL.md
 ```
 
 Then ask Aider to use `code-review`.
-
-This avoids loading every full workflow into every Aider session.
-
-## Legacy migration
-
-Older releases appended AICodeReview content to `.github/copilot-instructions.md`, `GEMINI.md`, and `CONVENTIONS.md`.
-
-The installer validates the managed marker pair, installs the replacement, then removes only the managed legacy section. User-owned content outside the markers is preserved. Corrupt markers stop migration before replacement files are written.
-
-## Installation safety
-
-AICodeReview writes ownership markers into native skill directories and beside generated files.
-
-Without `--force`, unmanaged conflicts stop installation. With `--force`, existing content is moved to a timestamped backup before replacement. Uninstall removes only managed paths.
-
-For Aider:
-
-- If `.aider.conf.yml` has no `read` setting, the installer adds a managed block for the compact `AICODEREVIEW.md` catalog.
-- If a user-managed `read` setting exists, it remains unchanged.
-- The installer never creates a duplicate top-level `read` key.
-- Selective skill directories are removed only when they carry an AICodeReview ownership marker.
 
 ## Use
 
@@ -200,68 +187,58 @@ Use security-audit on this pull request.
 Use review-fixer to fix only safe and concrete findings.
 Use release-review to check whether this build is ready to ship.
 Use architecture-review to inspect dependency direction and layer violations.
-Use test-writer to add tests grounded in the repository's current test style.
+Use test-writer to add tests grounded in the repository's current style.
 ```
 
 For Gemini CLI, run `/skills reload` after adding or updating workspace skills.
 
-## Per-project context
+## Project context
 
 ```bash
 cp templates/PROJECT_CONTEXT.md /path/to/project/PROJECT_CONTEXT.md
 ```
 
-Document the actual stack, architecture, conventions, verification commands, and migration constraints. Skills read this file when present.
-
-## Maintenance
-
-```bash
-./update.sh --project /path/to/project
-./list-installed.sh --project /path/to/project
-./check-health.sh --project /path/to/project
-```
-
-`check-health.sh` renders expected Cursor and Aider catalog output before comparing installed files. It also verifies OpenAI metadata, selective Aider skill directories, ownership markers, incomplete migrations, Aider activation, and corrupt marker states.
+Document the actual stack, architecture, verification commands, conventions, and migration constraints.
 
 ## Uninstall
 
 ```bash
-./uninstall.sh --agent claude
-./uninstall.sh --agent aider --project /path/to/project
-./uninstall.sh --agent all --project /path/to/project
+aicodereview uninstall --agent claude
+aicodereview uninstall --agent aider --project /path/to/project
+aicodereview uninstall --agent all --project /path/to/project
 ```
 
 User-owned paths and configuration remain untouched.
 
-## Validate and test
+## Test and package
 
 ```bash
-./scripts/validate.sh
-./tests/run-all.sh
+npm test
+npm run validate
+npm run pack:check
 ```
 
-Validation rejects metadata drift and obsolete duplicated adapters. Behavioral tests cover generation, installation, migration, backups, inventory, selective Aider loading, all-agent preflight, and uninstall.
+GitHub Actions runs the Node suite and package inspection on Ubuntu, macOS, and Windows. Legacy shell compatibility remains checked on Ubuntu and macOS.
 
 ## Design principles
 
 - Inspect real files before making claims.
-- Report production risks rather than personal style preferences.
-- Rank findings by severity and include file and line references.
+- Report correctness, security, performance, testing, and operational risks rather than taste.
+- Include severity, evidence, file and line references, impact, and a concrete fix direction.
 - Keep review workflows read-only unless the user explicitly requests changes.
-- Prefer small, verifiable fixes over broad rewrites.
-- Keep secrets, keys, signing files, private data, and `.env` values out of context files.
-- Describe skills, rules, conventions, and hooks accurately instead of treating them as interchangeable.
+- Preserve secrets, private data, and user-owned configuration.
+- Describe skills, rules, conventions, plugins, and hooks as different capabilities.
 
 ## Roadmap
 
-- **Phase 0:** Installation ownership, migration safety, native Copilot and Gemini support, OpenCode support, Aider activation, and CI.
-- **Phase 1:** Canonical workflow source, standardized OpenAI metadata, generated Cursor rules, and selective Aider workflow loading.
-- **Phase 2:** Cross-platform TypeScript CLI and Windows coverage.
-- **Phase 3:** Optional hooks and behavioral evaluation repositories.
+- **Phase 0:** Safe ownership, migration, native multi-agent support, and CI.
+- **Phase 1:** Canonical workflows, standardized metadata, generated Cursor rules, and selective Aider loading.
+- **Phase 2:** Complete cross-platform Node CLI, Windows coverage, health, update, and package validation.
+- **Phase 3:** Optional lifecycle hooks and behavioral evaluation fixtures.
 
 ## Contributing
 
-See `SKILL_GUIDE.md`.
+See `SKILL_GUIDE.md` and `CONTRIBUTING.md`.
 
 ## License
 

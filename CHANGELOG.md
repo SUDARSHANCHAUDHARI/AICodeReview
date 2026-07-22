@@ -4,6 +4,20 @@ All notable changes to AICodeReview will be documented here.
 
 ## Unreleased
 
+### Phase 2 cross-platform CLI
+
+- Added a complete TypeScript CLI for install, uninstall, list, health, update, validation, and metadata generation.
+- Replaced the npm entrypoint's Bash delegation with the compiled Node runtime.
+- Preserved backward-compatible flag-only usage while adding explicit commands.
+- Ported ownership markers, conflict backups, migration validation, all-agent preflight, native skill installation, generated Cursor rules, and selective Aider loading to Node.js.
+- Added transactional directory, file, and ownership-marker replacement with rollback after failed operations.
+- Added drift-aware inventory and health checks across every supported integration.
+- Added managed update detection, including selective Aider installations without a catalog file.
+- Removed Bash and Python files from the published npm runtime package.
+- Added package-content validation and a guarded prepublish lifecycle.
+- Added Node behavior tests for installation, migration, orphan markers, backups, inventory, health, update, and ownership-aware uninstall.
+- Added Ubuntu, macOS, and Windows Node CLI jobs while retaining repository-only shell compatibility checks on Ubuntu and macOS.
+
 ### Phase 1 skill standardization
 
 - Migrated all 31 `agents/openai.yaml` files to the nested `interface:` structure.
@@ -12,44 +26,33 @@ All notable changes to AICodeReview will be documented here.
 - Removed 124 manually maintained Cursor, Copilot, Gemini, and Aider prompt copies.
 - Generated Cursor rules directly from canonical `SKILL.md` content.
 - Added a compact Aider workflow catalog and installed canonical skill directories under `.aicodereview/skills/` for selective `/read` loading.
-- Added Python 3.8-compatible artifact generation with skill-name and description validation.
 - Added health and inventory checks for generated Cursor rules, the Aider catalog, and selective Aider skill directories.
-- Added behavioral tests for artifact generation, multi-rule Cursor installation, compact Aider output, selective Aider installation, and ownership-aware cleanup.
-- Updated public, contributor, and customization documentation to make `SKILL.md` the only workflow source.
+- Added behavioral tests for generation, multi-rule Cursor installation, compact Aider output, selective Aider installation, and ownership-aware cleanup.
 
 ### Phase 0B native agent integrations
 
-- Replaced the combined GitHub Copilot instruction section with native project skills under `.github/skills/`.
-- Replaced persistent Gemini `GEMINI.md` review context with native workspace skills under `.gemini/skills/`.
+- Replaced combined GitHub Copilot instructions with native project skills under `.github/skills/`.
+- Replaced persistent Gemini context with native workspace skills under `.gemini/skills/`.
 - Added native OpenCode support under `.opencode/skills/`.
 - Added a managed Aider catalog and safe `.aider.conf.yml` activation.
-- Added migration from legacy Copilot, Gemini, and Aider managed sections while preserving user-owned content outside the markers.
-- Changed migration to reject corrupt legacy markers before any replacement path is modified.
-- Added an all-agent preflight gate so a late conflict or corrupt migration cannot leave a partial installation.
-- Added update, inventory, health-check, and uninstall support for native project skill adapters.
-- Added behavioral coverage for native installs, legacy migration, conflict backups, Aider configuration, all-agent preflight, and safe uninstall.
+- Added safe migration from legacy Copilot, Gemini, and Aider sections while preserving user content.
+- Added an all-agent preflight gate to prevent partial installations.
 
 ### Phase 0A foundation hardening
 
-- Replaced duplicated hard-coded skill arrays with one dynamically discovered inventory.
+- Replaced duplicated hard-coded skill arrays with dynamic discovery.
 - Added ownership markers for native skill directories and generated files.
-- Changed forced installation so unmanaged conflicts are backed up instead of silently deleted.
-- Changed uninstall so unmanaged skill directories and generated files are preserved.
-- Added strict validation for managed marker count and order before update or removal.
-- Added atomic managed-section replacement.
-- Expanded health checks to cover every discovered skill and report unmanaged or stale installs.
-- Corrected the README support matrix to distinguish native skills, Cursor rules, and Aider conventions.
-- Added Ubuntu and macOS GitHub Actions validation.
-- Added behavioral install and uninstall safety tests.
-- Removed the unpublished Homebrew formula stub; distribution packaging will return with a real release and checksum.
+- Changed forced installation so unmanaged conflicts are backed up instead of deleted.
+- Changed uninstall so unmanaged paths are preserved.
+- Added strict marker validation, atomic managed-section replacement, and expanded health checks.
+- Added Ubuntu and macOS validation and behavioral safety tests.
+- Removed the unpublished Homebrew formula stub.
 
 ### Existing unreleased work
 
 - Restructured from Codex-only workflows to agent-agnostic skills.
-- Rewrote install and uninstall commands with agent and project options.
-- Added `ios-review`, `web-review`, `changelog-writer`, `dependency-audit`, `agent-config-review`, `backend-review`, `performance-review`, `accessibility-audit`, `database-review`, `test-writer`, `kmp-review`, `docker-review`, `ci-review`, `api-design-review`, `flutter-review`, `refactor-planner`, `architecture-review`, `code-smell-detector`, `error-handling-review`, `graphql-review`, `react-native-review`, `tech-debt-audit`, and `onboarding-writer`.
-- Added maintenance scripts, project-context examples, issue templates, and contributor guidance.
-- Total skill count: 31.
+- Added 31 review, audit, explanation, generation, and planning workflows.
+- Added project-context templates, examples, issue templates, and contributor guidance.
 
 ## v0.1.0
 

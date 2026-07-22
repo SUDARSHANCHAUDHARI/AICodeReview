@@ -1,28 +1,17 @@
 #!/usr/bin/env node
 'use strict';
 
-const { execFileSync } = require('child_process');
-const path = require('path');
-
-const installScript = path.join(__dirname, '..', 'install.sh');
-const args = process.argv.slice(2);
-
-// Show help if no args given
-if (args.length === 0) {
-  console.log('AICodeReview — AI-agnostic code review skill pack\n');
-  console.log('Usage:');
-  console.log('  npx aicodereview --agent claude');
-  console.log('  npx aicodereview --agent all --project /path/to/project');
-  console.log('  npx aicodereview --dry-run');
-  console.log('  npx aicodereview --help\n');
-  console.log('Delegates to install.sh. Run with --help for full option list.');
-  process.exit(0);
-}
+const path = require('node:path');
+const runtime = path.join(__dirname, '..', 'dist', 'runtime.js');
 
 try {
-  // Pass argv as an array (no shell) so user input can never be interpreted
-  // as shell syntax — avoids command injection via crafted arguments.
-  execFileSync('bash', [installScript, ...args], { stdio: 'inherit' });
-} catch (err) {
-  process.exit(err.status || 1);
+  const { main } = require(runtime);
+  process.exitCode = main(process.argv.slice(2));
+} catch (error) {
+  if (error && error.code === 'MODULE_NOT_FOUND') {
+    console.error('AICodeReview CLI is not built. Run `npm install && npm run build`.');
+  } else {
+    console.error(error instanceof Error ? error.message : String(error));
+  }
+  process.exitCode = 1;
 }
