@@ -16,7 +16,7 @@ skills/<skill-name>/
 - `SKILL.md` is installed natively for Claude Code, Codex, GitHub Copilot, Gemini CLI, and OpenCode.
 - `openai.yaml` is generated interface metadata.
 - Cursor rules are generated from `SKILL.md` during installation.
-- Aider receives one generated `AICODEREVIEW.md` built from all canonical skills.
+- Aider receives a compact generated catalog plus canonical skill directories under `.aicodereview/skills/`.
 
 Do not add `cursor.mdc`, `copilot.md`, `gemini.md`, or `aider.md` to a skill directory.
 
@@ -103,11 +103,17 @@ python3 scripts/skill_artifacts.py render-cursor \
   --output /tmp/my-skill.mdc
 ```
 
-Aider:
+Aider catalog:
 
 ```bash
 python3 scripts/skill_artifacts.py render-aider \
   --output /tmp/AICODEREVIEW.md
+```
+
+The catalog should remain compact. The full workflow is loaded in Aider from the installed canonical file:
+
+```text
+/read .aicodereview/skills/my-skill/SKILL.md
 ```
 
 ## Add an integration
@@ -142,5 +148,5 @@ Do not claim that rules, persistent instructions, conventions, and hooks are equ
 - Keep behavior changes focused.
 - Update documentation when a skill name, path, or capability changes.
 - Add an entry under `Unreleased` in `CHANGELOG.md`.
-- Test generation, dry-run, new install, managed update, unmanaged conflict, migration, and uninstall behavior.
+- Test generation, dry-run, new install, managed update, unmanaged conflict, migration, selective Aider loading, and uninstall behavior.
 - Never put private project details in reusable skills.
