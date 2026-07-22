@@ -66,6 +66,13 @@ mkdir -p "$opencode_project"
 "$ROOT_DIR/install.sh" --agent opencode --project "$opencode_project" >/dev/null
 assert_exists "$opencode_project/.opencode/skills/code-review/SKILL.md" "OpenCode native skill is installed"
 
+cursor_project="$TMP_ROOT/cursor"
+mkdir -p "$cursor_project"
+"$ROOT_DIR/install.sh" --agent cursor --project "$cursor_project" >/dev/null
+assert_exists "$cursor_project/.cursor/rules/code-review.mdc" "Cursor installs the first generated rule"
+assert_exists "$cursor_project/.cursor/rules/onboarding-writer.mdc" "Cursor installs the final generated rule"
+assert_contains "$cursor_project/.cursor/rules/code-review.mdc" "# Code Review" "Cursor rule contains canonical workflow content"
+
 aider_project="$TMP_ROOT/aider"
 mkdir -p "$aider_project"
 "$ROOT_DIR/install.sh" --agent aider --project "$aider_project" >/dev/null
