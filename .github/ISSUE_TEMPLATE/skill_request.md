@@ -11,35 +11,33 @@ labels: skill-request
 ## What it would review
 
 <!--
-Describe the scope. What code, config, or patterns should this skill analyse?
-Be specific: what questions should it answer? What defects should it surface?
+Describe the scope. What code, configuration, or patterns should this skill analyse?
+Be specific about the defects or decisions it should surface.
 -->
 
-## Which agents should support it
+## Which integrations should support it
+
+Native `SKILL.md` support is shared automatically by:
 
 - [ ] Claude Code
 - [ ] OpenAI Codex
-- [ ] Cursor
 - [ ] GitHub Copilot
-- [ ] Gemini
-- [ ] Aider
+- [ ] Gemini CLI
+- [ ] OpenCode
+
+Generated adapters:
+
+- [ ] Cursor rule needed
+- [ ] Aider convention needed
 
 ## Example prompt
 
-<!--
-Paste an example of how a user would invoke this skill. For example:
-
-  /review-graphql    (Claude Code)
-  @workspace /review-graphql   (Copilot)
--->
+<!-- Example: Use graphql-review to review this schema and its resolvers. -->
 
 ## Example findings
 
-<!--
-Optional: give one or two examples of the kind of issue this skill should catch.
-This helps evaluate whether the skill has a clear value proposition.
--->
+<!-- Give one or two realistic issues this workflow should catch. -->
 
 ## Additional context
 
-<!-- Any links, prior art, or related skills that would inform the implementation. -->
+<!-- Add relevant standards, documentation, or prior art. -->
