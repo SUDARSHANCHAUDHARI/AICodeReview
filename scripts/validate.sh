@@ -12,7 +12,11 @@ fail() { echo "FAIL: $*" >&2; failures=$((failures + 1)); }
 check_file() { [[ -f "$1" ]] || fail "Missing file: $1"; }
 check_nonempty() { [[ -s "$1" ]] || fail "Missing or empty file: $1"; }
 
-root_scripts=(
+required_files=(
+  "bin/aicodereview.js"
+  "src/cli.ts"
+  "tsconfig.json"
+  "package.json"
   "aicodereview-lib.sh"
   "install.sh"
   "uninstall.sh"
@@ -21,6 +25,7 @@ root_scripts=(
   "check-health.sh"
   "scripts/skill_artifacts.py"
   "scripts/validate.sh"
+  "tests/node-cli.test.js"
   "tests/run-all.sh"
   "tests/test-artifacts.sh"
   "tests/test-install.sh"
@@ -28,13 +33,16 @@ root_scripts=(
   "tests/test-validate.sh"
 )
 
-for script in "${root_scripts[@]}"; do
-  check_file "$script"
+for file in "${required_files[@]}"; do
+  check_file "$file"
 done
 
 for script in install.sh uninstall.sh update.sh list-installed.sh check-health.sh scripts/validate.sh tests/run-all.sh tests/test-artifacts.sh tests/test-install.sh tests/test-uninstall.sh tests/test-validate.sh; do
   [[ ! -f "$script" ]] || bash -n "$script" || fail "$script has shell syntax errors"
 done
+
+node --check bin/aicodereview.js || fail "bin/aicodereview.js has JavaScript syntax errors"
+node --check tests/node-cli.test.js || fail "tests/node-cli.test.js has JavaScript syntax errors"
 
 python3 - "$ROOT_DIR/scripts/skill_artifacts.py" <<'PYEOF' || fail "scripts/skill_artifacts.py has Python syntax errors"
 import pathlib
@@ -76,9 +84,15 @@ for script in install.sh uninstall.sh check-health.sh list-installed.sh; do
 done
 
 grep -qF 'render-cursor' install.sh || fail "install.sh does not generate Cursor rules"
-grep -qF 'render-aider' install.sh || fail "install.sh does not generate Aider conventions"
+grep -qF 'render-aider' install.sh || fail "install.sh does not generate the Aider catalog"
 grep -qF 'sync-openai --check' install.sh || fail "install.sh does not verify OpenAI metadata"
-grep -qF 'scripts/' package.json || fail "package.json does not publish scripts/"
+grep -qF "require(compiledCli)" bin/aicodereview.js || fail "npm entrypoint does not load the compiled Node CLI"
+if grep -qF "execFileSync('bash'" bin/aicodereview.js; then
+  fail "npm entrypoint still delegates to Bash"
+fi
+grep -qF 'windows-latest' .github/workflows/validate.yml || fail "CI does not include Windows"
+grep -qF 'dist/' package.json || fail "package.json does not publish compiled CLI output"
+grep -qF 'src/' package.json || fail "package.json does not publish TypeScript source"
 
 if [[ "$failures" -gt 0 ]]; then
   echo
