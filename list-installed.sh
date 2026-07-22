@@ -98,31 +98,41 @@ check_cursor() {
 }
 
 check_aider() {
-  local file="$project_dir/AICODEREVIEW.md"
-  local legacy_state status skill
+  local catalog="$project_dir/AICODEREVIEW.md"
+  local skills_base="$project_dir/.aicodereview/skills"
+  local legacy_state catalog_status skill skill_status status
 
   legacy_state="$(managed_section_state "$project_dir/CONVENTIONS.md" "$LEGACY_SECTION_START" "$LEGACY_SECTION_END")"
 
-  if [[ ! -e "$file" ]]; then
+  if [[ ! -e "$catalog" ]]; then
     if [[ "$legacy_state" == "managed" ]]; then
-      status="legacy"
+      catalog_status="legacy"
     elif [[ "$legacy_state" == "corrupt" ]]; then
-      status="unmanaged"
+      catalog_status="unmanaged"
     else
-      status="missing"
+      catalog_status="missing"
     fi
-  elif is_managed_file "$file"; then
-    status="installed"
+  elif is_managed_file "$catalog"; then
+    catalog_status="installed"
   else
-    status="unmanaged"
+    catalog_status="unmanaged"
   fi
 
   for skill in "${skills[@]}"; do
-    if [[ "$status" == "installed" ]] && ! grep -qF "$skill" "$file"; then
-      row "aider" "$skill" "missing"
+    skill_status="$(native_skill_status "$skills_base/$skill")"
+
+    if [[ "$catalog_status" == "unmanaged" || "$skill_status" == "unmanaged" ]]; then
+      status="unmanaged"
+    elif [[ "$catalog_status" == "legacy" && "$skill_status" == "missing" ]]; then
+      status="legacy"
+    elif [[ "$catalog_status" == "installed" && "$skill_status" == "installed" ]] \
+      && grep -qF "\`$skill\`" "$catalog"; then
+      status="installed"
     else
-      row "aider" "$skill" "$status"
+      status="missing"
     fi
+
+    row "aider" "$skill" "$status"
   done
 }
 
