@@ -32,9 +32,11 @@ grep -q '^# Code Review$' "$cursor" && pass "Cursor rule contains canonical work
 
 aider="$TMP_ROOT/AICODEREVIEW.md"
 python3 "$ROOT_DIR/scripts/skill_artifacts.py" render-aider --output "$aider"
-grep -q '^## Code Review$' "$aider" && pass "Aider output contains Code Review" || fail "Aider output omitted Code Review"
-grep -q '^### Workflow$' "$aider" && pass "Aider nested headings are demoted" || fail "Aider heading hierarchy is invalid"
-grep -q '^## Onboarding Writer$' "$aider" && pass "Aider output contains final discovered skill" || fail "Aider output omitted final skill"
+grep -qF '/read .aicodereview/skills/<skill-name>/SKILL.md' "$aider" && pass "Aider catalog explains selective activation" || fail "Aider activation guidance is missing"
+grep -qF '`code-review`:' "$aider" && pass "Aider catalog contains Code Review" || fail "Aider catalog omitted Code Review"
+grep -qF '`onboarding-writer`:' "$aider" && pass "Aider catalog contains final discovered skill" || fail "Aider catalog omitted final skill"
+line_count="$(wc -l < "$aider" | tr -d ' ')"
+[[ "$line_count" -lt 100 ]] && pass "Aider catalog stays compact" || fail "Aider catalog is too large ($line_count lines)"
 
 openai="$ROOT_DIR/skills/code-review/agents/openai.yaml"
 grep -q '^interface:$' "$openai" && pass "OpenAI metadata uses interface structure" || fail "OpenAI interface missing"
