@@ -6,21 +6,25 @@ All notable changes to AICodeReview will be documented here.
 
 ### Phase 1 skill standardization
 
-- Migrate every `agents/openai.yaml` file to the official nested `interface:` structure.
-- Require quoted metadata strings, 25–64 character short descriptions, and `$skill-name` in every default prompt.
-- Add deterministic metadata generation and check mode so stale metadata fails validation.
-- Generate Cursor and Aider adapters from canonical `SKILL.md` content instead of maintaining full manual prompt copies.
-- Retain legacy Copilot and Gemini files only as migration fixtures until their removal is safe.
+- Migrated all 31 `agents/openai.yaml` files to the nested `interface:` structure.
+- Required quoted metadata strings, 25–64 character short descriptions, and `$skill-name` in every default prompt.
+- Added deterministic metadata generation and check mode so stale metadata fails validation and installation.
+- Removed 124 manually maintained Cursor, Copilot, Gemini, and Aider prompt copies.
+- Generated Cursor rules directly from canonical `SKILL.md` content.
+- Added a compact Aider workflow catalog and installed canonical skill directories under `.aicodereview/skills/` for selective `/read` loading.
+- Added Python 3.8-compatible artifact generation with skill-name and description validation.
+- Added health and inventory checks for generated Cursor rules, the Aider catalog, and selective Aider skill directories.
+- Added behavioral tests for artifact generation, multi-rule Cursor installation, compact Aider output, selective Aider installation, and ownership-aware cleanup.
+- Updated public, contributor, and customization documentation to make `SKILL.md` the only workflow source.
 
 ### Phase 0B native agent integrations
 
 - Replaced the combined GitHub Copilot instruction section with native project skills under `.github/skills/`.
 - Replaced persistent Gemini `GEMINI.md` review context with native workspace skills under `.gemini/skills/`.
 - Added native OpenCode support under `.opencode/skills/`.
-- Added a managed `AICODEREVIEW.md` conventions file for Aider.
-- Added safe Aider auto-configuration when `.aider.conf.yml` does not already contain a user-managed `read` setting.
+- Added a managed Aider catalog and safe `.aider.conf.yml` activation.
 - Added migration from legacy Copilot, Gemini, and Aider managed sections while preserving user-owned content outside the markers.
-- Changed migration to reject corrupt legacy markers before any native skill path is modified.
+- Changed migration to reject corrupt legacy markers before any replacement path is modified.
 - Added an all-agent preflight gate so a late conflict or corrupt migration cannot leave a partial installation.
 - Added update, inventory, health-check, and uninstall support for native project skill adapters.
 - Added behavioral coverage for native installs, legacy migration, conflict backups, Aider configuration, all-agent preflight, and safe uninstall.
