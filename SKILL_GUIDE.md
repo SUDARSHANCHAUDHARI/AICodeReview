@@ -152,6 +152,17 @@ The repository currently contains legacy top-level fields in `openai.yaml`. Phas
 
 The maintenance scripts discover skill directories dynamically. Do not add the skill name to hard-coded shell arrays.
 
+## Integration safety
+
+Installer changes must preserve these guarantees:
+
+- Unmanaged paths are never silently overwritten or deleted.
+- `--force` creates a backup before replacing an unmanaged conflict.
+- Uninstall removes only ownership-marked content.
+- Legacy marker pairs are validated before migration.
+- Combined multi-agent commands preflight every adapter before writing the first file.
+- Aider configuration never gains a duplicate top-level `read` key.
+
 ## Validation
 
 ```bash
@@ -182,6 +193,7 @@ Tests must cover behavior, not only file existence. For installer changes, inclu
 - Backup preservation.
 - Legacy migration.
 - Corrupt migration markers.
+- Multi-agent partial-install prevention.
 - Uninstall ownership.
 - Dry-run behavior.
 - User configuration preservation.
@@ -192,6 +204,7 @@ Tests must cover behavior, not only file existence. For installer changes, inclu
 - Adding a new hard-coded skill list.
 - Overwriting an unmanaged destination.
 - Removing a file without checking its ownership marker.
+- Writing one adapter before validating every target in an all-agent operation.
 - Duplicating a top-level `read` key in `.aider.conf.yml`.
 - Leaving Copilot or Gemini legacy sections after a successful native migration.
 - Writing vague prompts that produce style commentary instead of evidence-based findings.
