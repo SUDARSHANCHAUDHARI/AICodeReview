@@ -86,6 +86,16 @@ printf '# >>> AICodeReview START <<<\nlegacy\n' > "$corrupt_project/.github/copi
 assert_exit_code 1 "Corrupt legacy markers block migration" "$ROOT_DIR/install.sh" --agent copilot --project "$corrupt_project"
 assert_not_exists "$corrupt_project/.github/skills/code-review" "Corrupt migration fails before native skill changes"
 
+all_project="$TMP_ROOT/all-preflight"
+all_claude="$TMP_ROOT/all-claude"
+all_codex="$TMP_ROOT/all-codex"
+mkdir -p "$all_project"
+printf '# >>> AICodeReview START <<<\nlegacy\n' > "$all_project/GEMINI.md"
+assert_exit_code 1 "All-agent install rejects a later corrupt adapter during preflight" env CLAUDE_HOME="$all_claude" CODEX_HOME="$all_codex" "$ROOT_DIR/install.sh" --agent all --project "$all_project"
+assert_not_exists "$all_claude/skills/code-review" "All-agent preflight prevents partial Claude installation"
+assert_not_exists "$all_codex/skills/code-review" "All-agent preflight prevents partial Codex installation"
+assert_not_exists "$all_project/.cursor/rules/code-review.mdc" "All-agent preflight prevents partial project installation"
+
 conflict_project="$TMP_ROOT/conflict"
 mkdir -p "$conflict_project/.github/skills/code-review"
 printf 'user-owned\n' > "$conflict_project/.github/skills/code-review/custom.txt"
