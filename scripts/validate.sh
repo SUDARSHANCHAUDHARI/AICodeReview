@@ -23,6 +23,9 @@ root_scripts=(
   "check-health.sh"
   "scripts/validate.sh"
   "tests/run-all.sh"
+  "tests/test-install.sh"
+  "tests/test-uninstall.sh"
+  "tests/test-validate.sh"
 )
 
 for script in "${root_scripts[@]}"; do
@@ -73,10 +76,24 @@ for skill in "${skills[@]}"; do
   fi
 done
 
-grep -q 'load_skills' install.sh || fail "install.sh does not load the dynamic skill inventory"
-grep -q 'load_skills' uninstall.sh || fail "uninstall.sh does not load the dynamic skill inventory"
-grep -q 'load_skills' check-health.sh || fail "check-health.sh does not load the dynamic skill inventory"
-grep -q 'load_skills' list-installed.sh || fail "list-installed.sh does not load the dynamic skill inventory"
+for script in install.sh uninstall.sh check-health.sh list-installed.sh; do
+  grep -q 'load_skills' "$script" || fail "$script does not load the dynamic skill inventory"
+done
+
+grep -qF '.github/skills' install.sh || fail "install.sh missing native Copilot skills path"
+grep -qF '.gemini/skills' install.sh || fail "install.sh missing native Gemini skills path"
+grep -qF '.opencode/skills' install.sh || fail "install.sh missing native OpenCode skills path"
+grep -qF 'AICODEREVIEW.md' install.sh || fail "install.sh missing managed Aider conventions file"
+grep -qF '.github/skills' uninstall.sh || fail "uninstall.sh missing native Copilot cleanup"
+grep -qF '.gemini/skills' uninstall.sh || fail "uninstall.sh missing native Gemini cleanup"
+grep -qF '.opencode/skills' uninstall.sh || fail "uninstall.sh missing native OpenCode cleanup"
+
+if grep -q 'install_combined "copilot.md"' install.sh; then
+  fail "Copilot still installs a combined persistent instruction section"
+fi
+if grep -q 'install_combined "gemini.md"' install.sh; then
+  fail "Gemini still installs a combined persistent context section"
+fi
 
 if [[ "$failures" -gt 0 ]]; then
   echo ""
