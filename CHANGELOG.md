@@ -13,8 +13,9 @@ All notable changes to AICodeReview will be documented here.
 - Added safe Aider auto-configuration when `.aider.conf.yml` does not already contain a user-managed `read` setting.
 - Added migration from legacy Copilot, Gemini, and Aider managed sections while preserving user-owned content outside the markers.
 - Changed migration to reject corrupt legacy markers before any native skill path is modified.
+- Added an all-agent preflight gate so a late conflict or corrupt migration cannot leave a partial installation.
 - Added update, inventory, health-check, and uninstall support for native project skill adapters.
-- Added behavioral coverage for native installs, legacy migration, conflict backups, Aider configuration, and safe uninstall.
+- Added behavioral coverage for native installs, legacy migration, conflict backups, Aider configuration, all-agent preflight, and safe uninstall.
 
 ### Phase 0A foundation hardening
 
