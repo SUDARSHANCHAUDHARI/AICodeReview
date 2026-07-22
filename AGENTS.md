@@ -36,6 +36,7 @@ Copilot and Gemini legacy managed sections are migration inputs only. Do not add
 - Replace or remove only paths carrying an AICodeReview ownership marker.
 - `--force` must back up unmanaged conflicts before replacement.
 - Validate legacy section markers before migration and stop before mutation when markers are corrupt.
+- Preflight all adapters before an all-agent operation writes the first file.
 - Do not create a duplicate top-level `read` key in `.aider.conf.yml`.
 - Keep review and audit skills read-only unless the user explicitly requests changes.
 - Never commit credentials, signing material, private customer data, or `.env` values.
@@ -47,7 +48,7 @@ Copilot and Gemini legacy managed sections are migration inputs only. Do not add
 ./tests/run-all.sh
 ```
 
-Installer changes require behavioral coverage for new installs, managed updates, unmanaged conflicts, migration, rollback or preservation, dry runs, and uninstall ownership.
+Installer changes require behavioral coverage for new installs, managed updates, unmanaged conflicts, migration, partial-install prevention, dry runs, and uninstall ownership.
 
 ## Installation examples
 
