@@ -3,43 +3,12 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=aicodereview-lib.sh
+source "$ROOT_DIR/aicodereview-lib.sh"
+load_skills "$ROOT_DIR"
 
 SECTION_START="# >>> AICodeReview START <<<"
 SECTION_END="# >>> AICodeReview END <<<"
-
-skills=(
-  "code-review"
-  "security-audit"
-  "codebase-explainer"
-  "review-fixer"
-  "android-review"
-  "ios-review"
-  "web-review"
-  "release-review"
-  "pr-summary"
-  "context-writer"
-  "changelog-writer"
-  "dependency-audit"
-  "agent-config-review"
-  "backend-review"
-  "performance-review"
-  "accessibility-audit"
-  "database-review"
-  "test-writer"
-  "kmp-review"
-  "docker-review"
-  "ci-review"
-  "api-design-review"
-  "flutter-review"
-  "refactor-planner"
-  "architecture-review"
-  "code-smell-detector"
-  "error-handling-review"
-  "graphql-review"
-  "react-native-review"
-  "tech-debt-audit"
-  "onboarding-writer"
-)
 
 agent=""
 project_dir=""
@@ -47,41 +16,43 @@ dry_run=false
 force=false
 
 usage() {
-  cat <<'EOF'
+  cat <<'EOF_USAGE'
 Usage: ./install.sh [--agent <agent>] [--project <path>] [--dry-run] [--force]
 
 Agents:
-  claude   Install skills to ~/.claude/skills/ (Claude Code)
-  codex    Install skills to ~/.codex/skills/ (OpenAI Codex)
-  global   Install claude + codex (default when no --agent given)
-  cursor   Install rules to <project>/.cursor/rules/ (requires --project)
-  copilot  Append instructions to <project>/.github/copilot-instructions.md (requires --project)
-  gemini   Append instructions to <project>/GEMINI.md (requires --project)
-  aider    Append conventions to <project>/CONVENTIONS.md (requires --project)
-  all      Install all agents: global + cursor + copilot + gemini + aider (requires --project)
+  claude   Install native skills to ~/.claude/skills/
+  codex    Install native skills to ~/.codex/skills/
+  global   Install claude + codex (default when no --agent is given)
+  cursor   Install project rules to <project>/.cursor/rules/ (requires --project)
+  copilot  Install legacy combined instructions to <project>/.github/copilot-instructions.md
+  gemini   Install legacy combined context to <project>/GEMINI.md
+  aider    Install conventions to <project>/CONVENTIONS.md
+  all      Install all current adapters (requires --project)
 
 Options:
   --agent <agent>    Agent to install for (default: global)
-  --project <path>   Target project directory (required for cursor, copilot, gemini, aider, all)
+  --project <path>   Target project directory for project-scoped adapters
   --dry-run          Show what would happen without writing files
-  --force            Overwrite or update existing installed skills
+  --force            Update managed installs; back up unmanaged conflicts before replacement
   --help             Show this help message
 
-Notes:
-  - copilot, gemini, and aider append into a marked section in the target file.
-    Existing content outside the section is preserved.
-  - Re-running updates the section in place. Use --force to update global skills.
-EOF
+Safety:
+  - Native skill directories and Cursor rules are marked as AICodeReview-managed.
+  - --force never silently deletes an unmanaged conflicting path; it creates a timestamped backup.
+  - Combined files are changed only when their managed marker pair is valid.
+EOF_USAGE
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent)
-      agent="${2:-}"
+      [[ $# -ge 2 ]] || { echo "Error: --agent requires a value" >&2; exit 1; }
+      agent="$2"
       shift 2
       ;;
     --project)
-      project_dir="${2:-}"
+      [[ $# -ge 2 ]] || { echo "Error: --project requires a value" >&2; exit 1; }
+      project_dir="$2"
       shift 2
       ;;
     --dry-run)
@@ -106,7 +77,7 @@ done
 
 [[ -z "$agent" ]] && agent="global"
 
-install_global() {
+install_native_agent() {
   local dest_base="$1"
   local label="$2"
 
@@ -114,28 +85,15 @@ install_global() {
     mkdir -p "$dest_base"
   fi
 
+  local skill
   for skill in "${skills[@]}"; do
-    local src="$ROOT_DIR/skills/$skill"
-    local dest="$dest_base/$skill"
-
-    if [[ ! -d "$src" ]]; then
-      echo "Missing skill directory: $src" >&2
-      exit 1
-    fi
-
-    if [[ -e "$dest" && "$force" == false ]]; then
-      echo "Skipping $skill ($label); already exists (use --force to overwrite)"
-      continue
-    fi
-
-    if [[ "$dry_run" == true ]]; then
-      echo "Would install $skill -> $dest"
-      continue
-    fi
-
-    [[ -e "$dest" ]] && rm -rf "$dest"
-    cp -R "$src" "$dest"
-    echo "Installed $skill -> $dest"
+    install_skill_directory \
+      "$ROOT_DIR/skills/$skill" \
+      "$dest_base/$skill" \
+      "$skill" \
+      "$label" \
+      "$force" \
+      "$dry_run"
   done
 }
 
@@ -146,9 +104,11 @@ install_cursor() {
     mkdir -p "$rules_dir"
   fi
 
+  local skill src dest marker tmp old_path old_marker keep_old
   for skill in "${skills[@]}"; do
-    local src="$ROOT_DIR/skills/$skill/agents/cursor.mdc"
-    local dest="$rules_dir/$skill.mdc"
+    src="$ROOT_DIR/skills/$skill/agents/cursor.mdc"
+    dest="$rules_dir/$skill.mdc"
+    marker="${dest}${AICODEREVIEW_CURSOR_MARKER_SUFFIX}"
 
     if [[ ! -f "$src" ]]; then
       echo "Missing cursor config: $src" >&2
@@ -156,83 +116,158 @@ install_cursor() {
     fi
 
     if [[ -e "$dest" && "$force" == false ]]; then
-      echo "Skipping $skill (cursor); already exists (use --force to overwrite)"
+      if is_managed_cursor_rule "$dest"; then
+        echo "Skipping $skill (cursor); already installed (use --force to update)"
+      else
+        echo "Skipping $skill (cursor); destination exists and is not managed by AICodeReview"
+      fi
       continue
     fi
 
     if [[ "$dry_run" == true ]]; then
-      echo "Would install $skill -> $dest"
+      if [[ -e "$dest" ]] && ! is_managed_cursor_rule "$dest"; then
+        echo "Would back up unmanaged $dest and install $skill -> $dest"
+      elif [[ -e "$dest" ]]; then
+        echo "Would update $skill -> $dest"
+      else
+        echo "Would install $skill -> $dest"
+      fi
       continue
     fi
 
-    cp "$src" "$dest"
+    tmp="${dest}.aicodereview-tmp-$$"
+    cp "$src" "$tmp"
+    old_path=""
+    old_marker=""
+    keep_old=false
+
+    if [[ -e "$dest" ]]; then
+      if is_managed_cursor_rule "$dest"; then
+        old_path="${dest}.aicodereview-old-$$"
+        old_marker="${marker}.old-$$"
+        mv "$dest" "$old_path"
+        mv "$marker" "$old_marker"
+      else
+        old_path="$(next_backup_path "$dest")"
+        keep_old=true
+        mv "$dest" "$old_path"
+      fi
+    fi
+
+    if ! mv "$tmp" "$dest"; then
+      rm -f "$tmp"
+      [[ -n "$old_path" && -e "$old_path" ]] && mv "$old_path" "$dest"
+      [[ -n "$old_marker" && -e "$old_marker" ]] && mv "$old_marker" "$marker"
+      echo "Failed to install $skill -> $dest; previous content restored" >&2
+      exit 1
+    fi
+
+    write_managed_cursor_marker "$dest" "$skill"
+
+    if [[ -n "$old_path" ]]; then
+      if [[ "$keep_old" == true ]]; then
+        echo "Backed up unmanaged destination -> $old_path"
+      else
+        rm -f "$old_path" "$old_marker"
+      fi
+    fi
+
     echo "Installed $skill -> $dest"
   done
 }
 
-# Writes our content into a marked section in the target file.
-# Existing content outside the section is preserved.
-# On re-run, the section is replaced in place.
+build_combined_section() {
+  local agent_file="$1"
+  local output_file="$2"
+  local skill src
+
+  : > "$output_file"
+  printf '%s\n\n' "$SECTION_START" >> "$output_file"
+
+  for skill in "${skills[@]}"; do
+    src="$ROOT_DIR/skills/$skill/agents/$agent_file"
+    if [[ ! -f "$src" ]]; then
+      echo "Missing $agent_file for $skill" >&2
+      return 1
+    fi
+    cat "$src" >> "$output_file"
+    printf '\n\n' >> "$output_file"
+  done
+
+  printf '%s\n' "$SECTION_END" >> "$output_file"
+}
+
 install_combined() {
   local agent_file="$1"
   local dest="$2"
+  local state section_file
+
+  state="$(managed_section_state "$dest" "$SECTION_START" "$SECTION_END")"
+  if [[ "$state" == "corrupt" ]]; then
+    echo "Error: invalid AICodeReview marker state in $dest; refusing to modify it" >&2
+    return 1
+  fi
+
+  section_file="$(mktemp "${TMPDIR:-/tmp}/aicodereview-section.XXXXXX")"
+  build_combined_section "$agent_file" "$section_file"
 
   if [[ "$dry_run" == true ]]; then
-    echo "Would write $agent_file section -> $dest"
-    return
+    echo "Would write $agent_file section -> $dest ($state)"
+    rm -f "$section_file"
+    return 0
   fi
 
-  local dest_dir
-  dest_dir="$(dirname "$dest")"
-  mkdir -p "$dest_dir"
+  mkdir -p "$(dirname "$dest")"
 
-  # Build the new section content
-  local section
-  section="$(printf '%s\n\n' "$SECTION_START")"
-  for skill in "${skills[@]}"; do
-    local src="$ROOT_DIR/skills/$skill/agents/$agent_file"
-    if [[ ! -f "$src" ]]; then
-      echo "Missing $agent_file for $skill" >&2
-      exit 1
-    fi
-    section+="$(cat "$src")"$'\n\n'
-  done
-  section+="$SECTION_END"
-
-  if [[ ! -e "$dest" ]]; then
-    # New file — write section only
-    printf '%s\n' "$section" > "$dest"
+  if [[ "$state" == "absent" ]]; then
+    cp "$section_file" "$dest"
     echo "Installed $agent_file section -> $dest"
-    return
-  fi
+  elif [[ "$state" == "unmanaged" ]]; then
+    printf '\n' >> "$dest"
+    cat "$section_file" >> "$dest"
+    echo "Appended $agent_file section -> $dest"
+  else
+    python3 - "$dest" "$SECTION_START" "$SECTION_END" "$section_file" <<'PYEOF'
+import os
+import re
+import sys
+import tempfile
 
-  # File exists — check for our section
-  if grep -qF "$SECTION_START" "$dest"; then
-    # Replace the section in place using Python (safe for multiline, no sed issues)
-    python3 - "$dest" "$SECTION_START" "$SECTION_END" "$section" <<'PYEOF'
-import sys, re
-path, start_marker, end_marker, new_section = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
-content = open(path).read()
-pattern = re.escape(start_marker) + r'.*?' + re.escape(end_marker)
-# Use a function as the replacement so backslashes / group references
-# (\1, \g<...>) inside the section content are treated literally, not as
-# regex replacement escapes — otherwise skill content could corrupt the file.
-updated = re.sub(pattern, lambda _m: new_section, content, flags=re.DOTALL)
-open(path, 'w').write(updated)
+path, start_marker, end_marker, section_path = sys.argv[1:]
+with open(path, encoding="utf-8") as handle:
+    content = handle.read()
+with open(section_path, encoding="utf-8") as handle:
+    new_section = handle.read().rstrip("\n")
+pattern = re.escape(start_marker) + r".*?" + re.escape(end_marker)
+updated, count = re.subn(pattern, lambda _match: new_section, content, flags=re.DOTALL)
+if count != 1:
+    raise SystemExit(f"expected one managed section, replaced {count}")
+folder = os.path.dirname(path) or "."
+fd, tmp = tempfile.mkstemp(prefix=".aicodereview-", dir=folder, text=True)
+try:
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(updated)
+    os.replace(tmp, path)
+except Exception:
+    try:
+        os.unlink(tmp)
+    except FileNotFoundError:
+        pass
+    raise
 PYEOF
     echo "Updated $agent_file section -> $dest"
-  else
-    # Append our section to existing file
-    printf '\n%s\n' "$section" >> "$dest"
-    echo "Appended $agent_file section -> $dest"
   fi
+
+  rm -f "$section_file"
 }
 
 project_agents=("cursor" "copilot" "gemini" "aider")
-
 requires_project=false
-for pa in "${project_agents[@]}"; do
-  [[ "$agent" == "$pa" || "$agent" == "all" ]] && requires_project=true && break
+for project_agent in "${project_agents[@]}"; do
+  if [[ "$agent" == "$project_agent" || "$agent" == "all" ]]; then
+    requires_project=true
+    break
+  fi
 done
 
 if [[ "$requires_project" == true && -z "$project_dir" ]]; then
@@ -248,20 +283,20 @@ fi
 run_project_agents() {
   install_cursor
   install_combined "copilot.md" "$project_dir/.github/copilot-instructions.md"
-  install_combined "gemini.md"  "$project_dir/GEMINI.md"
-  install_combined "aider.md"   "$project_dir/CONVENTIONS.md"
+  install_combined "gemini.md" "$project_dir/GEMINI.md"
+  install_combined "aider.md" "$project_dir/CONVENTIONS.md"
 }
 
 case "$agent" in
   global)
-    install_global "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
-    install_global "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
+    install_native_agent "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
+    install_native_agent "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
     ;;
   codex)
-    install_global "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
+    install_native_agent "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
     ;;
   claude)
-    install_global "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
+    install_native_agent "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
     ;;
   cursor)
     install_cursor
@@ -276,8 +311,8 @@ case "$agent" in
     install_combined "aider.md" "$project_dir/CONVENTIONS.md"
     ;;
   all)
-    install_global "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
-    install_global "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
+    install_native_agent "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
+    install_native_agent "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
     run_project_agents
     ;;
   *)
@@ -293,6 +328,9 @@ if [[ "$dry_run" == true ]]; then
 else
   echo "Done."
   if [[ "$agent" == "global" || "$agent" == "all" || "$agent" == "codex" || "$agent" == "claude" ]]; then
-    echo "Restart your AI assistant if the new skills do not appear immediately."
+    echo "Restart your AI assistant if newly installed skills do not appear immediately."
+  fi
+  if [[ "$agent" == "aider" || "$agent" == "all" ]]; then
+    echo "Aider note: load CONVENTIONS.md with /read or add it to the read list in .aider.conf.yml."
   fi
 fi
