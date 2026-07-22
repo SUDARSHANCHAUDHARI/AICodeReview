@@ -1,5 +1,10 @@
 # Usage
 
+## Requirements
+
+- Bash
+- Python 3.8 or later
+
 ## Install
 
 ```bash
@@ -36,7 +41,7 @@ Install everything:
 ./install.sh --agent all --project /path/to/project
 ```
 
-The all-agent command validates every destination and legacy migration marker before writing any files.
+The all-agent command validates every destination, generated artifact, and legacy migration marker before writing files.
 
 Preview changes:
 
@@ -136,20 +141,33 @@ Native project skills are installed under `.opencode/skills/`.
 
 ### Cursor
 
-Rules are installed per project under `.cursor/rules/` and can be selected or applied by Cursor.
+Rules are generated per project under `.cursor/rules/` from canonical `SKILL.md` files.
 
 ### Aider
 
-The installer generates `AICODEREVIEW.md`.
+The installer creates:
 
-When `.aider.conf.yml` does not already contain a user-managed `read` setting, AICodeReview adds:
+```text
+AICODEREVIEW.md
+.aicodereview/skills/<skill-name>/SKILL.md
+```
+
+`AICODEREVIEW.md` is a compact catalog. When `.aider.conf.yml` has no user-managed `read` setting, AICodeReview adds:
 
 ```yaml
 read:
   - AICODEREVIEW.md
 ```
 
-When a `read` setting already exists, add `AICODEREVIEW.md` to that existing list manually. The installer will not add a duplicate top-level key.
+Load only the workflow needed for the current task:
+
+```text
+/read .aicodereview/skills/code-review/SKILL.md
+```
+
+Then ask Aider to use `code-review`.
+
+When a `read` setting already exists, add `AICODEREVIEW.md` to that existing list manually. The installer will not create a duplicate top-level key.
 
 ## Check status
 
@@ -160,16 +178,16 @@ When a `read` setting already exists, add `AICODEREVIEW.md` to that existing lis
 
 Inventory status values:
 
-- `installed`: managed current-format integration exists.
-- `legacy`: old managed instructions exist but native migration is pending.
+- `installed`: the managed catalog and skill path exist.
+- `legacy`: old managed instructions exist but migration is pending.
 - `unmanaged`: a conflicting user-owned path or corrupt marker state exists.
-- `missing`: no installation was found.
+- `missing`: the integration or one of its required files is absent.
 
 ## Uninstall
 
 ```bash
-./uninstall.sh --agent copilot --project /path/to/project
+./uninstall.sh --agent aider --project /path/to/project
 ./uninstall.sh --agent all --project /path/to/project
 ```
 
-Only AICodeReview-managed paths and sections are removed.
+Only AICodeReview-managed paths and sections are removed. Unmanaged Aider skill directories are preserved.
