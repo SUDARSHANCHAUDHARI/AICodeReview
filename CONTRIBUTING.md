@@ -8,6 +8,7 @@ Thanks for improving AICodeReview.
 - Keep project-specific private context in your own repositories, not in reusable skills.
 - Preserve user-owned files and configuration when changing installers.
 - Test installer changes with dry runs and temporary project directories.
+- Preflight every destination before a multi-agent command writes its first file.
 - Do not publish, push unrelated branches, rename the repository, or change visibility unless explicitly requested.
 
 ## Editing skills
@@ -49,7 +50,8 @@ Skill directories are discovered dynamically. Do not add the skill name to an in
 4. Add ownership and unmanaged-conflict handling.
 5. Add migration logic when replacing an existing adapter.
 6. Add behavioral tests covering preservation of user-owned content.
-7. Update README, AGENTS.md, SKILL_GUIDE.md, issue templates, and CHANGELOG.
+7. Add an all-agent preflight when the integration participates in a combined install.
+8. Update README, AGENTS.md, SKILL_GUIDE.md, issue templates, and CHANGELOG.
 
 Do not describe skills, rules, conventions, and hooks as equivalent capabilities.
 
@@ -70,4 +72,4 @@ Do not describe skills, rules, conventions, and hooks as equivalent capabilities
 ./tests/run-all.sh
 ```
 
-Installer or migration changes should also be tested against temporary projects containing unmanaged conflicts and existing configuration.
+Installer or migration changes should also be tested against temporary projects containing unmanaged conflicts, corrupt legacy markers, and existing configuration.
