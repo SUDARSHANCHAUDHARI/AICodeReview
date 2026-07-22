@@ -36,6 +36,8 @@ Install everything:
 ./install.sh --agent all --project /path/to/project
 ```
 
+The all-agent command validates every destination and legacy migration marker before writing any files.
+
 Preview changes:
 
 ```bash
