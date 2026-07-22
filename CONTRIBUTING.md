@@ -10,6 +10,17 @@ Thanks for improving AICodeReview.
 - Preflight every destination before a multi-agent command writes its first file.
 - Do not publish, rename the repository, or change visibility unless explicitly requested.
 
+## Development setup
+
+```bash
+npm install
+npm run build
+npm test
+npm run test:shell
+```
+
+The Node suite runs cross-platform. Shell compatibility remains temporary until Phase 2B.
+
 ## Editing a skill
 
 The canonical workflow is:
@@ -35,17 +46,19 @@ Do not create separate Copilot, Gemini, OpenCode, Cursor, or Aider workflow copi
 
 1. Create `skills/<skill-name>/SKILL.md`.
 2. Create the `agents/` directory if needed.
-3. Generate the OpenAI metadata:
+3. Build and generate the OpenAI metadata:
 
 ```bash
-python3 scripts/skill_artifacts.py sync-openai --write
+npm run build
+node bin/aicodereview.js generate --write
 ```
 
 4. Run validation and tests:
 
 ```bash
-./scripts/validate.sh
-./tests/run-all.sh
+npm run validate
+npm test
+npm run test:shell
 ```
 
 5. Update README and CHANGELOG when the public inventory changes.
@@ -54,13 +67,13 @@ Skills are discovered dynamically. Do not add an installer array.
 
 ## Generated artifacts
 
-Committed OpenAI metadata must match the generator:
+Committed OpenAI metadata must match the TypeScript generator:
 
 ```bash
-python3 scripts/skill_artifacts.py sync-openai --check
+node bin/aicodereview.js generate --check
 ```
 
-Cursor rules and `AICODEREVIEW.md` are rendered at installation time. Aider skill directories are copied from canonical `SKILL.md` files to `.aicodereview/skills/` so users can load one workflow with `/read`.
+Cursor rules and `AICODEREVIEW.md` are rendered during installation. Aider skill directories are copied from canonical `SKILL.md` files to `.aicodereview/skills/` so users can load one workflow with `/read`.
 
 Do not commit these obsolete per-skill files:
 
@@ -72,6 +85,15 @@ aider.md
 ```
 
 Keep the generated Aider catalog compact. It should list available workflows and explain selective loading, not embed all workflow bodies.
+
+## Changing the CLI
+
+- Implement new cross-platform behavior in `src/cli.ts` first.
+- Keep the npm entrypoint free of Bash delegation.
+- Add Node behavior tests using temporary directories and isolated `CLAUDE_HOME` and `CODEX_HOME` values.
+- Cover Windows path handling, unmanaged backups, corrupt markers, all-agent preflight, and ownership-aware uninstall.
+- Keep temporary shell behavior aligned until the equivalent command moves to Node.
+- Do not edit `dist/` manually. It is generated during build and package creation.
 
 ## Adding an integration
 
@@ -98,11 +120,11 @@ Do not describe skills, rules, conventions, and hooks as equivalent capabilities
 ## Before sharing
 
 ```bash
-python3 scripts/skill_artifacts.py validate
-python3 scripts/skill_artifacts.py sync-openai --check
-./install.sh --dry-run
-./scripts/validate.sh
-./tests/run-all.sh
+npm run build
+npm run validate
+npm test
+npm run test:shell
+npm pack --dry-run
 ```
 
 Installer and migration changes should also be tested against unmanaged conflicts, corrupt legacy markers, selective Aider skill paths, and existing user configuration.
