@@ -7,8 +7,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ROOT_DIR/aicodereview-lib.sh"
 load_skills "$ROOT_DIR"
 
-SECTION_START="# >>> AICodeReview START <<<"
-SECTION_END="# >>> AICodeReview END <<<"
+LEGACY_SECTION_START="# >>> AICodeReview START <<<"
+LEGACY_SECTION_END="# >>> AICodeReview END <<<"
+AIDER_CONFIG_START="# >>> AICodeReview Aider read START <<<"
+AIDER_CONFIG_END="# <<< AICodeReview Aider read END <<<"
 
 agent=""
 project_dir=""
@@ -19,18 +21,19 @@ usage() {
 Usage: ./uninstall.sh [--agent <agent>] [--project <path>] [--dry-run]
 
 Agents:
-  claude   Remove managed skills from ~/.claude/skills/
-  codex    Remove managed skills from ~/.codex/skills/
-  global   Remove managed claude + codex skills (default)
-  cursor   Remove managed rules from <project>/.cursor/rules/
-  copilot  Remove the AICodeReview section from copilot-instructions.md
-  gemini   Remove the AICodeReview section from GEMINI.md
-  aider    Remove the AICodeReview section from CONVENTIONS.md
-  all      Remove all current adapters (requires --project)
+  claude    Remove managed skills from ~/.claude/skills/
+  codex     Remove managed skills from ~/.codex/skills/
+  global    Remove managed claude + codex skills (default)
+  cursor    Remove managed project rules from <project>/.cursor/rules/
+  copilot   Remove managed native skills from <project>/.github/skills/
+  gemini    Remove managed native skills from <project>/.gemini/skills/
+  opencode  Remove managed native skills from <project>/.opencode/skills/
+  aider     Remove managed AICODEREVIEW.md and managed Aider config
+  all       Remove every current adapter (requires --project)
 
 Safety:
-  Native skill directories and Cursor rules are deleted only when an
-  AICodeReview ownership marker is present. Unmanaged paths are left untouched.
+  Native skill directories and generated files are deleted only when an
+  AICodeReview ownership marker is present. User-managed files are preserved.
 EOF_USAGE
 }
 
@@ -76,88 +79,56 @@ remove_native_agent() {
 
 remove_cursor() {
   local rules_dir="$project_dir/.cursor/rules"
-  local skill dest marker
+  local skill dest
 
   for skill in "${skills[@]}"; do
     dest="$rules_dir/$skill.mdc"
-    marker="${dest}${AICODEREVIEW_CURSOR_MARKER_SUFFIX}"
-
-    if [[ ! -e "$dest" ]]; then
-      echo "Not installed: $skill (cursor)"
-      continue
-    fi
-
-    if ! is_managed_cursor_rule "$dest"; then
-      echo "Skipping $dest; it is not marked as an AICodeReview install" >&2
-      continue
-    fi
-
-    if [[ "$dry_run" == true ]]; then
-      echo "Would remove $dest and $marker"
-    else
-      rm -f "$dest" "$marker"
-      echo "Removed $dest"
-    fi
+    remove_managed_file "$dest" "Cursor rule $skill" "$dry_run"
   done
 }
 
-remove_section() {
+remove_legacy_section() {
   local dest="$1"
   local label="$2"
-  local state
 
-  state="$(managed_section_state "$dest" "$SECTION_START" "$SECTION_END")"
-
-  case "$state" in
-    absent|unmanaged)
-      echo "Not installed: $label ($dest)"
-      return 0
-      ;;
-    corrupt)
-      echo "Error: invalid AICodeReview marker state in $dest; refusing to modify it" >&2
-      return 1
-      ;;
-  esac
-
-  if [[ "$dry_run" == true ]]; then
-    echo "Would remove AICodeReview section from $dest"
-    return 0
-  fi
-
-  python3 - "$dest" "$SECTION_START" "$SECTION_END" <<'PYEOF'
-import os
-import re
-import sys
-import tempfile
-
-path, start_marker, end_marker = sys.argv[1:]
-with open(path, encoding="utf-8") as handle:
-    content = handle.read()
-pattern = r"\n?" + re.escape(start_marker) + r".*?" + re.escape(end_marker) + r"\n?"
-updated, count = re.subn(pattern, "", content, flags=re.DOTALL)
-if count != 1:
-    raise SystemExit(f"expected one managed section, removed {count}")
-updated = updated.strip()
-if not updated:
-    os.remove(path)
-else:
-    folder = os.path.dirname(path) or "."
-    fd, tmp = tempfile.mkstemp(prefix=".aicodereview-", dir=folder, text=True)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            handle.write(updated + "\n")
-        os.replace(tmp, path)
-    except Exception:
-        try:
-            os.unlink(tmp)
-        except FileNotFoundError:
-            pass
-        raise
-PYEOF
-  echo "Removed AICodeReview section from $dest"
+  remove_managed_section \
+    "$dest" \
+    "$LEGACY_SECTION_START" \
+    "$LEGACY_SECTION_END" \
+    "$label" \
+    "$dry_run"
 }
 
-project_agents=("cursor" "copilot" "gemini" "aider")
+remove_copilot() {
+  remove_native_agent "$project_dir/.github/skills" "copilot"
+  remove_legacy_section "$project_dir/.github/copilot-instructions.md" "legacy Copilot instructions"
+}
+
+remove_gemini() {
+  remove_native_agent "$project_dir/.gemini/skills" "gemini"
+  remove_legacy_section "$project_dir/GEMINI.md" "legacy Gemini context"
+}
+
+remove_opencode() {
+  remove_native_agent "$project_dir/.opencode/skills" "opencode"
+}
+
+remove_aider() {
+  remove_managed_file "$project_dir/AICODEREVIEW.md" "Aider conventions" "$dry_run"
+  remove_managed_section \
+    "$project_dir/.aider.conf.yml" \
+    "$AIDER_CONFIG_START" \
+    "$AIDER_CONFIG_END" \
+    "managed Aider read configuration" \
+    "$dry_run"
+  remove_legacy_section "$project_dir/CONVENTIONS.md" "legacy Aider conventions"
+
+  if [[ -f "$project_dir/.aider.conf.yml" ]] && grep -qF "AICODEREVIEW.md" "$project_dir/.aider.conf.yml"; then
+    echo "Note: user-managed .aider.conf.yml content still references AICODEREVIEW.md and was left unchanged."
+  fi
+}
+
+project_agents=("cursor" "copilot" "gemini" "opencode" "aider")
 requires_project=false
 for project_agent in "${project_agents[@]}"; do
   if [[ "$agent" == "$project_agent" || "$agent" == "all" ]]; then
@@ -178,9 +149,10 @@ fi
 
 run_project_agents() {
   remove_cursor
-  remove_section "$project_dir/.github/copilot-instructions.md" "copilot"
-  remove_section "$project_dir/GEMINI.md" "gemini"
-  remove_section "$project_dir/CONVENTIONS.md" "aider"
+  remove_copilot
+  remove_gemini
+  remove_opencode
+  remove_aider
 }
 
 case "$agent" in
@@ -198,13 +170,16 @@ case "$agent" in
     remove_cursor
     ;;
   copilot)
-    remove_section "$project_dir/.github/copilot-instructions.md" "copilot"
+    remove_copilot
     ;;
   gemini)
-    remove_section "$project_dir/GEMINI.md" "gemini"
+    remove_gemini
+    ;;
+  opencode)
+    remove_opencode
     ;;
   aider)
-    remove_section "$project_dir/CONVENTIONS.md" "aider"
+    remove_aider
     ;;
   all)
     remove_native_agent "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
