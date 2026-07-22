@@ -176,27 +176,27 @@ install_cursor() {
 
   preflight_cursor
   generated_dir="$(mktemp -d "${TMPDIR:-/tmp}/aicodereview-cursor.XXXXXX")"
-  trap 'rm -rf "$generated_dir"' RETURN
 
-  for skill in "${skills[@]}"; do
-    generated="$generated_dir/$skill.mdc"
-    python3 "$ARTIFACT_SCRIPT" render-cursor --skill "$skill" --output "$generated"
-  done
+  (
+    trap 'rm -rf "$generated_dir"' EXIT
 
-  for skill in "${skills[@]}"; do
-    generated="$generated_dir/$skill.mdc"
-    dest="$rules_dir/$skill.mdc"
-    install_managed_file \
-      "$generated" \
-      "$dest" \
-      "cursor-rule:$skill" \
-      "Cursor rule $skill" \
-      "$force" \
-      "$dry_run"
-  done
+    for skill in "${skills[@]}"; do
+      generated="$generated_dir/$skill.mdc"
+      python3 "$ARTIFACT_SCRIPT" render-cursor --skill "$skill" --output "$generated"
+    done
 
-  rm -rf "$generated_dir"
-  trap - RETURN
+    for skill in "${skills[@]}"; do
+      generated="$generated_dir/$skill.mdc"
+      dest="$rules_dir/$skill.mdc"
+      install_managed_file \
+        "$generated" \
+        "$dest" \
+        "cursor-rule:$skill" \
+        "Cursor rule $skill" \
+        "$force" \
+        "$dry_run"
+    done
+  )
 }
 
 aider_config_clean_content() {
