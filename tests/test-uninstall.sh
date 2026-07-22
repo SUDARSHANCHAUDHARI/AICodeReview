@@ -15,10 +15,16 @@ assert_not_exists() { [[ ! -e "$1" ]] && pass "$2" || fail "$2"; }
 echo "── test-uninstall.sh ───────────────────────────────────"
 
 project="$TMP_ROOT/project"
+claude_home="$TMP_ROOT/claude"
+codex_home="$TMP_ROOT/codex"
 mkdir -p "$project"
-"$ROOT_DIR/install.sh" --agent all --project "$project" >/dev/null
-"$ROOT_DIR/uninstall.sh" --agent all --project "$project" >/dev/null
+env CLAUDE_HOME="$claude_home" CODEX_HOME="$codex_home" \
+  "$ROOT_DIR/install.sh" --agent all --project "$project" >/dev/null
+env CLAUDE_HOME="$claude_home" CODEX_HOME="$codex_home" \
+  "$ROOT_DIR/uninstall.sh" --agent all --project "$project" >/dev/null
 
+assert_not_exists "$claude_home/skills/code-review" "Managed Claude skill is removed from isolated test home"
+assert_not_exists "$codex_home/skills/code-review" "Managed Codex skill is removed from isolated test home"
 assert_not_exists "$project/.cursor/rules/code-review.mdc" "Managed Cursor rule is removed"
 assert_not_exists "$project/.github/skills/code-review" "Managed Copilot skill is removed"
 assert_not_exists "$project/.gemini/skills/code-review" "Managed Gemini skill is removed"
