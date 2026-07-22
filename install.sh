@@ -7,6 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ROOT_DIR/aicodereview-lib.sh"
 load_skills "$ROOT_DIR"
 
+ARTIFACT_SCRIPT="$ROOT_DIR/scripts/skill_artifacts.py"
 LEGACY_SECTION_START="# >>> AICodeReview START <<<"
 LEGACY_SECTION_END="# >>> AICodeReview END <<<"
 AIDER_CONFIG_START="# >>> AICodeReview Aider read START <<<"
@@ -24,29 +25,29 @@ Usage: ./install.sh [--agent <agent>] [--project <path>] [--dry-run] [--force]
 Agents:
   claude    Install native skills to ~/.claude/skills/
   codex     Install native skills to ~/.codex/skills/
-  global    Install claude + codex (default when no --agent is given)
-  cursor    Install project rules to <project>/.cursor/rules/
+  global    Install claude + codex (default)
+  cursor    Generate project rules in <project>/.cursor/rules/
   copilot   Install native project skills to <project>/.github/skills/
   gemini    Install native project skills to <project>/.gemini/skills/
   opencode  Install native project skills to <project>/.opencode/skills/
-  aider     Install <project>/AICODEREVIEW.md and configure it when safe
+  aider     Install a compact catalog plus selective skills in <project>/.aicodereview/skills/
   all       Install every current adapter (requires --project)
 
 Options:
-  --agent <agent>    Agent to install for (default: global)
+  --agent <agent>    Agent to install for
   --project <path>   Target project directory for project-scoped adapters
-  --dry-run          Show what would happen without writing files
-  --force            Update managed installs; back up unmanaged conflicts before replacement
-  --help             Show this help message
+  --dry-run          Show changes without writing files
+  --force            Update managed installs and back up unmanaged conflicts
+  --help             Show this message
+
+Canonical source:
+  SKILL.md is the only workflow source. OpenAI metadata, Cursor rules, and
+  the Aider catalog are generated deterministically from it.
 
 Migration:
-  - Copilot removes only the managed AICodeReview section from copilot-instructions.md
-    after native skills are installed successfully.
-  - Gemini removes only the managed AICodeReview section from GEMINI.md after native
-    skills are installed successfully.
-  - Aider migrates the managed CONVENTIONS.md section to AICODEREVIEW.md.
-  - Corrupt legacy markers stop migration before native files are changed.
-  - The all-agent install preflights every target before writing any adapter.
+  Managed legacy Copilot, Gemini, and Aider sections are removed only after
+  their replacement is validated and installed. Corrupt markers stop before
+  any target is modified. The all-agent path preflights every adapter first.
 EOF_USAGE
 }
 
@@ -84,23 +85,34 @@ done
 
 [[ -z "$agent" ]] && agent="global"
 
+validate_artifact_source() {
+  command -v python3 >/dev/null 2>&1 || {
+    echo "Error: python3 is required to generate agent artifacts" >&2
+    return 1
+  }
+  [[ -f "$ARTIFACT_SCRIPT" ]] || {
+    echo "Error: missing artifact renderer: $ARTIFACT_SCRIPT" >&2
+    return 1
+  }
+  python3 "$ARTIFACT_SCRIPT" validate >/dev/null
+  python3 "$ARTIFACT_SCRIPT" sync-openai --check >/dev/null
+}
+
 preflight_native_agent() {
   local dest_base="$1"
   local label="$2"
+  validate_artifact_source
   preflight_skill_directory_install "$dest_base" "$label" "$force"
 }
 
 install_native_agent() {
   local dest_base="$1"
   local label="$2"
+  local skill
 
   preflight_native_agent "$dest_base" "$label"
+  [[ "$dry_run" == true ]] || mkdir -p "$dest_base"
 
-  if [[ "$dry_run" == false ]]; then
-    mkdir -p "$dest_base"
-  fi
-
-  local skill
   for skill in "${skills[@]}"; do
     install_skill_directory \
       "$ROOT_DIR/skills/$skill" \
@@ -116,11 +128,11 @@ preflight_project_native_agent() {
   local dest_base="$1"
   local label="$2"
   local legacy_file="${3:-}"
+  local state
 
   if [[ -n "$legacy_file" ]]; then
-    local legacy_state
-    legacy_state="$(managed_section_state "$legacy_file" "$LEGACY_SECTION_START" "$LEGACY_SECTION_END")"
-    if [[ "$legacy_state" == "corrupt" ]]; then
+    state="$(managed_section_state "$legacy_file" "$LEGACY_SECTION_START" "$LEGACY_SECTION_END")"
+    if [[ "$state" == "corrupt" ]]; then
       echo "Error: invalid AICodeReview markers in $legacy_file; refusing migration" >&2
       return 1
     fi
@@ -149,54 +161,46 @@ install_project_native_agent() {
 
 preflight_cursor() {
   local rules_dir="$project_dir/.cursor/rules"
-  local skill src dest
+  local skill dest
 
+  validate_artifact_source
   for skill in "${skills[@]}"; do
-    src="$ROOT_DIR/skills/$skill/agents/cursor.mdc"
     dest="$rules_dir/$skill.mdc"
-    [[ -f "$src" ]] || { echo "Missing Cursor config: $src" >&2; return 1; }
     preflight_managed_file_install "$dest" "Cursor rule $skill" "$force"
   done
 }
 
 install_cursor() {
   local rules_dir="$project_dir/.cursor/rules"
-  local skill src dest
+  local generated_dir skill generated dest
 
   preflight_cursor
+  generated_dir="$(mktemp -d "${TMPDIR:-/tmp}/aicodereview-cursor.XXXXXX")"
 
-  for skill in "${skills[@]}"; do
-    src="$ROOT_DIR/skills/$skill/agents/cursor.mdc"
-    dest="$rules_dir/$skill.mdc"
-    install_managed_file "$src" "$dest" "cursor-rule:$skill" "Cursor rule $skill" "$force" "$dry_run"
-  done
-}
+  (
+    trap 'rm -rf "$generated_dir"' EXIT
 
-build_aider_file() {
-  local output_file="$1"
-  local skill src
+    for skill in "${skills[@]}"; do
+      generated="$generated_dir/$skill.mdc"
+      python3 "$ARTIFACT_SCRIPT" render-cursor --skill "$skill" --output "$generated"
+    done
 
-  {
-    echo "# AICodeReview"
-    echo
-    echo "Generated review conventions. This file is managed by AICodeReview."
-    echo
-  } > "$output_file"
-
-  for skill in "${skills[@]}"; do
-    src="$ROOT_DIR/skills/$skill/agents/aider.md"
-    if [[ ! -f "$src" ]]; then
-      echo "Missing Aider config: $src" >&2
-      return 1
-    fi
-    cat "$src" >> "$output_file"
-    printf '\n\n' >> "$output_file"
-  done
+    for skill in "${skills[@]}"; do
+      generated="$generated_dir/$skill.mdc"
+      dest="$rules_dir/$skill.mdc"
+      install_managed_file \
+        "$generated" \
+        "$dest" \
+        "cursor-rule:$skill" \
+        "Cursor rule $skill" \
+        "$force" \
+        "$dry_run"
+    done
+  )
 }
 
 aider_config_clean_content() {
   local config_file="$1"
-
   python3 - "$config_file" "$AIDER_CONFIG_START" "$AIDER_CONFIG_END" <<'PYEOF'
 import re
 import sys
@@ -217,12 +221,11 @@ configure_aider_read() {
 
   state="$(managed_section_state "$config_file" "$AIDER_CONFIG_START" "$AIDER_CONFIG_END")"
   if [[ "$state" == "corrupt" ]]; then
-    echo "Error: invalid AICodeReview Aider markers in $config_file; refusing to modify it" >&2
+    echo "Error: invalid AICodeReview Aider markers in $config_file" >&2
     return 1
   fi
 
   clean_content="$(aider_config_clean_content "$config_file")"
-
   if printf '%s\n' "$clean_content" | grep -Eq '^[[:space:]]*read[[:space:]]*:'; then
     if [[ "$state" == "managed" ]]; then
       remove_managed_section \
@@ -234,10 +237,10 @@ configure_aider_read() {
     fi
 
     if printf '%s\n' "$clean_content" | grep -qF "AICODEREVIEW.md"; then
-      echo "Aider config already references AICODEREVIEW.md through a user-managed read setting."
+      echo "Aider config already references AICODEREVIEW.md."
     else
       echo "Aider config has an existing read setting; it was left unchanged."
-      echo "Add AICODEREVIEW.md to that read list to load the review conventions automatically."
+      echo "Add AICODEREVIEW.md to that read list to load the compact workflow catalog."
     fi
     return 0
   fi
@@ -257,45 +260,51 @@ EOF_SECTION
     "$section_file" \
     "Aider read configuration" \
     "$dry_run"
-
   rm -f "$section_file"
 }
 
 preflight_aider() {
   local legacy_file="$project_dir/CONVENTIONS.md"
-  local dest="$project_dir/AICODEREVIEW.md"
-  local legacy_state config_state skill src
+  local catalog="$project_dir/AICODEREVIEW.md"
+  local skills_base="$project_dir/.aicodereview/skills"
+  local legacy_state config_state
+
+  validate_artifact_source
 
   legacy_state="$(managed_section_state "$legacy_file" "$LEGACY_SECTION_START" "$LEGACY_SECTION_END")"
-  if [[ "$legacy_state" == "corrupt" ]]; then
-    echo "Error: invalid AICodeReview markers in $legacy_file; refusing migration" >&2
+  [[ "$legacy_state" != "corrupt" ]] || {
+    echo "Error: invalid AICodeReview markers in $legacy_file" >&2
     return 1
-  fi
+  }
 
   config_state="$(managed_section_state "$project_dir/.aider.conf.yml" "$AIDER_CONFIG_START" "$AIDER_CONFIG_END")"
-  if [[ "$config_state" == "corrupt" ]]; then
+  [[ "$config_state" != "corrupt" ]] || {
     echo "Error: invalid AICodeReview Aider markers in $project_dir/.aider.conf.yml" >&2
     return 1
-  fi
+  }
 
-  for skill in "${skills[@]}"; do
-    src="$ROOT_DIR/skills/$skill/agents/aider.md"
-    [[ -f "$src" ]] || { echo "Missing Aider config: $src" >&2; return 1; }
-  done
-
-  preflight_managed_file_install "$dest" "Aider conventions" "$force"
+  preflight_skill_directory_install "$skills_base" "aider" "$force"
+  preflight_managed_file_install "$catalog" "Aider workflow catalog" "$force"
 }
 
 install_aider() {
   local legacy_file="$project_dir/CONVENTIONS.md"
-  local dest="$project_dir/AICODEREVIEW.md"
+  local catalog="$project_dir/AICODEREVIEW.md"
+  local skills_base="$project_dir/.aicodereview/skills"
   local generated
 
   preflight_aider
-
   generated="$(mktemp "${TMPDIR:-/tmp}/aicodereview-aider.XXXXXX")"
-  build_aider_file "$generated"
-  install_managed_file "$generated" "$dest" "aider-conventions" "Aider conventions" "$force" "$dry_run"
+  python3 "$ARTIFACT_SCRIPT" render-aider --output "$generated"
+
+  install_native_agent "$skills_base" "aider"
+  install_managed_file \
+    "$generated" \
+    "$catalog" \
+    "aider-catalog" \
+    "Aider workflow catalog" \
+    "$force" \
+    "$dry_run"
   rm -f "$generated"
 
   remove_managed_section \
@@ -386,15 +395,15 @@ case "$agent" in
     ;;
 esac
 
-echo ""
+echo
 if [[ "$dry_run" == true ]]; then
   echo "Dry run complete. No files were changed."
 else
   echo "Done."
-  if [[ "$agent" == "global" || "$agent" == "all" || "$agent" == "codex" || "$agent" == "claude" ]]; then
-    echo "Restart Claude Code or Codex if newly installed skills do not appear immediately."
-  fi
   if [[ "$agent" == "gemini" || "$agent" == "all" ]]; then
-    echo "Gemini CLI: run /skills reload to refresh the discovered skills."
+    echo "Gemini CLI: run /skills reload to refresh workspace skills."
+  fi
+  if [[ "$agent" == "aider" || "$agent" == "all" ]]; then
+    echo "Aider: load a workflow with /read .aicodereview/skills/<skill-name>/SKILL.md."
   fi
 fi

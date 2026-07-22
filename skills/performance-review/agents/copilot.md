@@ -1,3 +1,0 @@
-## Performance Review
-
-When asked to review for performance: check for expensive work in hot paths/tight loops, unnecessary recomputation (memoize/cache), blocking I/O on responsive threads. Android: unstable Compose state causing excess recompositions, Bitmap lifecycle. iOS: main-thread work during scroll, large images in memory. Web: render-blocking scripts, layout thrashing, missing stable list keys. Database: N+1 queries, missing indexes, unbounded SELECT. Network: chatty APIs, missing HTTP caching, large uncompressed payloads. Bundle: whole-library imports, missing code splitting. Focus on concrete measurable risks, not speculative micro-optimisations. Order findings P1–P3 with file:line references.

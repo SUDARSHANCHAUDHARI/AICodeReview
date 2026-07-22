@@ -1,3 +1,4 @@
-display_name: Performance Review
-short_description: Review code for CPU, memory, rendering, DB, network, and bundle performance.
-default_prompt: Use performance-review to review my changes for performance issues.
+interface:
+  display_name: "Performance Review"
+  short_description: "Run the Performance Review workflow"
+  default_prompt: "Use $performance-review to apply this workflow to the current repository."

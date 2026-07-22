@@ -1,3 +1,4 @@
-display_name: Refactor Planner
-short_description: Plan a refactor safely: blast radius, incremental steps, rollback strategy.
-default_prompt: Use refactor-planner to plan this refactor.
+interface:
+  display_name: "Refactor Planner"
+  short_description: "Run the Refactor Planner workflow"
+  default_prompt: "Use $refactor-planner to apply this workflow to the current repository."

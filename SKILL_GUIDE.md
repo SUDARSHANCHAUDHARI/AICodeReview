@@ -4,37 +4,31 @@ This guide explains how to add or change an AICodeReview workflow.
 
 ## Canonical structure
 
-Each workflow lives under `skills/<skill-name>/`:
+Each workflow lives under:
 
 ```text
-skills/
-  <skill-name>/
-    SKILL.md
-    agents/
-      openai.yaml
-      cursor.mdc
-      copilot.md
-      gemini.md
-      aider.md
+skills/<skill-name>/
+├── SKILL.md
+└── agents/
+    └── openai.yaml
 ```
 
-`SKILL.md` is the canonical workflow. Claude Code, Codex, GitHub Copilot, Gemini CLI, and OpenCode receive that native skill directory.
+`SKILL.md` is the only workflow source. Claude Code, Codex, GitHub Copilot, Gemini CLI, and OpenCode receive that native directory. Aider receives the same canonical skill files under `.aicodereview/skills/` for selective `/read` loading.
 
-The files under `agents/` currently serve these roles:
+`agents/openai.yaml` is generated product metadata. Cursor rules and the compact Aider catalog are generated at installation time.
 
-| File | Current role |
-|---|---|
-| `openai.yaml` | Codex product-facing skill metadata |
-| `cursor.mdc` | Cursor project rule |
-| `copilot.md` | Legacy adapter retained temporarily for migration and Phase 1 generation work |
-| `gemini.md` | Legacy adapter retained temporarily for migration and Phase 1 generation work |
-| `aider.md` | Compact Aider conventions used to generate `AICODEREVIEW.md` |
+Never add these obsolete duplicate adapters:
 
-Phase 1 will remove unnecessary manual duplication and generate non-native adapters from `SKILL.md`.
+```text
+cursor.mdc
+copilot.md
+gemini.md
+aider.md
+```
 
 ## SKILL.md frontmatter
 
-Every `SKILL.md` must start with:
+Every skill starts with:
 
 ```markdown
 ---
@@ -45,13 +39,13 @@ description: <what the skill does and when an agent should activate it>
 
 Requirements:
 
-- `name` must match the directory name.
+- `name` matches the directory exactly.
 - Use lowercase letters, numbers, and single hyphens.
-- `description` must be specific enough for an agent to select the skill correctly.
+- `description` is specific enough for correct on-demand selection.
 - Keep the description within 1,024 characters.
-- Do not put project secrets or private repository data in reusable skills.
+- Do not include secrets or private repository data.
 
-Optional resources may be added beside `SKILL.md`:
+Optional resources may live beside `SKILL.md`:
 
 ```text
 scripts/
@@ -60,13 +54,13 @@ assets/
 examples/
 ```
 
-Reference them explicitly in the workflow.
+Reference supporting files explicitly from the workflow.
 
 ## Writing effective workflows
 
 ### Inspect before judging
 
-Start by reading the relevant repository state:
+Start by reading repository state and relevant context:
 
 ```markdown
 ## Workflow
@@ -78,7 +72,7 @@ Start by reading the relevant repository state:
 
 ### Focus on evidence
 
-A finding should identify:
+Each finding should include:
 
 1. Severity.
 2. File and line.
@@ -89,7 +83,7 @@ A finding should identify:
 
 Do not report a defect when the necessary implementation was not inspected.
 
-### Use the shared severity model
+### Severity model
 
 | Level | Meaning |
 |---|---|
@@ -98,86 +92,127 @@ Do not report a defect when the necessary implementation was not inspected.
 | P2 | Useful fix: edge case, maintainability risk, or minor performance problem |
 | P3 | Optional polish; use sparingly |
 
-### Keep review skills read-only
+### Keep reviews read-only
 
 Review and audit skills must not edit files, push changes, publish artifacts, or alter repository settings unless the user explicitly asks.
 
 Generation and fixer skills must still avoid ambiguous or destructive changes.
 
-## Adapter guidance
+## OpenAI metadata
 
-### Native Agent Skills
+Generate metadata after adding or renaming a skill:
 
-Do not create separate Copilot, Gemini, or OpenCode prompt copies for new behavior. Their current installers copy the canonical skill directory to:
-
-```text
-.github/skills/<skill-name>/
-.gemini/skills/<skill-name>/
-.opencode/skills/<skill-name>/
+```bash
+python3 scripts/skill_artifacts.py sync-openai --write
 ```
 
-Claude Code and Codex use their global skill locations.
+The generated shape is:
 
-### Cursor
+```yaml
+interface:
+  display_name: "Code Review"
+  short_description: "Run the Code Review workflow"
+  default_prompt: "Use $code-review to apply this workflow to the current repository."
+```
 
-`cursor.mdc` uses MDC frontmatter:
+Rules:
 
-```markdown
+- Metadata strings are quoted.
+- `short_description` is 25–64 characters.
+- `default_prompt` contains `$skill-name`.
+- Do not hand-edit generated metadata unless you also update the renderer.
+
+Verify committed metadata with:
+
+```bash
+python3 scripts/skill_artifacts.py sync-openai --check
+```
+
+## Cursor generation
+
+Cursor rules are rendered from `SKILL.md`:
+
+```bash
+python3 scripts/skill_artifacts.py render-cursor \
+  --skill code-review \
+  --output /tmp/code-review.mdc
+```
+
+Generated rules use:
+
+```yaml
 ---
-description: <specific trigger description>
+description: "<SKILL.md description>"
 globs: []
 alwaysApply: false
 ---
-
-<compact workflow>
 ```
 
-Use `alwaysApply: false` for on-demand review workflows. Add globs only when the rule is genuinely file-type-specific.
+Do not maintain a separate Cursor workflow copy.
 
-### Aider
+## Aider generation and loading
 
-`aider.md` should be a compact convention, not a full duplicate of a large skill. All Aider adapters are combined into the generated `AICODEREVIEW.md` file.
+The renderer creates a compact workflow catalog:
 
-### OpenAI metadata
+```bash
+python3 scripts/skill_artifacts.py render-aider \
+  --output /tmp/AICODEREVIEW.md
+```
 
-The repository currently contains legacy top-level fields in `openai.yaml`. Phase 1 will migrate these files to the official nested `interface:` format. Until that migration is complete, keep new files consistent with the existing repository and treat validation warnings as known debt.
+The catalog must remain small. It lists workflow names and descriptions and explains how to load one full skill:
+
+```text
+/read .aicodereview/skills/code-review/SKILL.md
+```
+
+The installer:
+
+1. Writes the compact `AICODEREVIEW.md` catalog.
+2. Copies canonical skill directories to `.aicodereview/skills/` with ownership markers.
+3. Adds the catalog to `.aider.conf.yml` only when doing so does not create a duplicate `read` key.
+
+Do not combine all full workflow bodies into the catalog. That would load unnecessary context into every Aider session.
 
 ## Adding a skill
 
 1. Create `skills/<skill-name>/SKILL.md`.
-2. Add the required files under `skills/<skill-name>/agents/`.
+2. Run `python3 scripts/skill_artifacts.py sync-openai --write`.
 3. Run validation.
-4. Run all behavioral tests.
-5. Update README and CHANGELOG when the public skill inventory changes.
+4. Run the full behavioral test suite.
+5. Update README and CHANGELOG when the public inventory changes.
 
-The maintenance scripts discover skill directories dynamically. Do not add the skill name to hard-coded shell arrays.
+The maintenance scripts discover skill directories dynamically. Do not add hard-coded arrays.
 
 ## Integration safety
 
 Installer changes must preserve these guarantees:
 
 - Unmanaged paths are never silently overwritten or deleted.
-- `--force` creates a backup before replacing an unmanaged conflict.
+- `--force` backs up an unmanaged conflict before replacement.
 - Uninstall removes only ownership-marked content.
-- Legacy marker pairs are validated before migration.
-- Combined multi-agent commands preflight every adapter before writing the first file.
+- Legacy markers are validated before migration.
+- Combined multi-agent commands preflight every adapter before writing.
+- Generated artifact validation happens before installation.
 - Aider configuration never gains a duplicate top-level `read` key.
+- Unmanaged Aider skill directories remain untouched during uninstall.
 
 ## Validation
 
 ```bash
+python3 scripts/skill_artifacts.py validate
+python3 scripts/skill_artifacts.py sync-openai --check
 ./scripts/validate.sh
 ```
 
 Validation checks:
 
-- Shell syntax.
-- Skill directory naming.
-- `SKILL.md` frontmatter.
-- Required adapter files.
-- Native Copilot, Gemini, and OpenCode installation paths.
+- Shell and Python syntax.
+- Skill directory naming and frontmatter.
+- Standardized OpenAI metadata.
+- Absence of obsolete duplicated adapters.
+- Native integration paths.
 - Dynamic skill discovery.
-- Known metadata migration warnings.
+- Generated Cursor rules and compact Aider catalog behavior.
 
 ## Tests
 
@@ -185,27 +220,29 @@ Validation checks:
 ./tests/run-all.sh
 ```
 
-Tests must cover behavior, not only file existence. For installer changes, include scenarios for:
+Behavioral tests should cover:
 
+- Artifact generation.
 - New install.
 - Managed update.
-- Unmanaged conflict.
-- Backup preservation.
-- Legacy migration.
-- Corrupt migration markers.
+- Unmanaged conflict and backup preservation.
+- Legacy migration and corrupt markers.
 - Multi-agent partial-install prevention.
-- Uninstall ownership.
+- Selective Aider workflow installation and cleanup.
 - Dry-run behavior.
+- Uninstall ownership.
 - User configuration preservation.
 
 ## Common mistakes
 
-- Treating persistent instructions as equivalent to on-demand skills.
-- Adding a new hard-coded skill list.
+- Adding a second workflow source outside `SKILL.md`.
+- Hand-maintaining Cursor, Copilot, Gemini, or Aider prompt copies.
+- Embedding all Aider workflows into the auto-loaded catalog.
+- Forgetting to regenerate OpenAI metadata.
+- Adding a hard-coded skill list.
 - Overwriting an unmanaged destination.
 - Removing a file without checking its ownership marker.
-- Writing one adapter before validating every target in an all-agent operation.
+- Writing before every target in an all-agent operation has passed preflight.
 - Duplicating a top-level `read` key in `.aider.conf.yml`.
-- Leaving Copilot or Gemini legacy sections after a successful native migration.
-- Writing vague prompts that produce style commentary instead of evidence-based findings.
+- Reporting style preferences instead of evidence-based defects.
 - Using absolute paths in reusable skills.

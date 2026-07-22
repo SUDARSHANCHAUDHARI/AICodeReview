@@ -1,2 +1,4 @@
-name: react-native-review
-description: Review React Native code for JS thread blocking, bridge inefficiency, memory leaks, FlatList misuse, platform isolation, and deep link security.
+interface:
+  display_name: "React Native Review"
+  short_description: "Run the React Native Review workflow"
+  default_prompt: "Use $react-native-review to apply this workflow to the current repository."

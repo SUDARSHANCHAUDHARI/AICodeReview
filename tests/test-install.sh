@@ -66,12 +66,22 @@ mkdir -p "$opencode_project"
 "$ROOT_DIR/install.sh" --agent opencode --project "$opencode_project" >/dev/null
 assert_exists "$opencode_project/.opencode/skills/code-review/SKILL.md" "OpenCode native skill is installed"
 
+cursor_project="$TMP_ROOT/cursor"
+mkdir -p "$cursor_project"
+"$ROOT_DIR/install.sh" --agent cursor --project "$cursor_project" >/dev/null
+assert_exists "$cursor_project/.cursor/rules/code-review.mdc" "Cursor installs the first generated rule"
+assert_exists "$cursor_project/.cursor/rules/onboarding-writer.mdc" "Cursor installs the final generated rule"
+assert_contains "$cursor_project/.cursor/rules/code-review.mdc" "# Code Review" "Cursor rule contains canonical workflow content"
+
 aider_project="$TMP_ROOT/aider"
 mkdir -p "$aider_project"
 "$ROOT_DIR/install.sh" --agent aider --project "$aider_project" >/dev/null
-assert_exists "$aider_project/AICODEREVIEW.md" "Aider conventions file is installed"
-assert_exists "$aider_project/AICODEREVIEW.md.aicodereview-managed" "Aider conventions file is ownership-marked"
-assert_contains "$aider_project/.aider.conf.yml" "AICODEREVIEW.md" "Aider is auto-configured when no read setting exists"
+assert_exists "$aider_project/AICODEREVIEW.md" "Aider workflow catalog is installed"
+assert_exists "$aider_project/AICODEREVIEW.md.aicodereview-managed" "Aider catalog is ownership-marked"
+assert_exists "$aider_project/.aicodereview/skills/code-review/SKILL.md" "Aider installs the first selective skill"
+assert_exists "$aider_project/.aicodereview/skills/onboarding-writer/SKILL.md" "Aider installs the final selective skill"
+assert_contains "$aider_project/AICODEREVIEW.md" "/read .aicodereview/skills/<skill-name>/SKILL.md" "Aider catalog explains selective skill loading"
+assert_contains "$aider_project/.aider.conf.yml" "AICODEREVIEW.md" "Aider catalog is auto-configured when no read setting exists"
 
 aider_existing="$TMP_ROOT/aider-existing"
 mkdir -p "$aider_existing"

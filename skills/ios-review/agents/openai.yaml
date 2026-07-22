@@ -1,3 +1,4 @@
-display_name: iOS Review
-short_description: iOS/macOS Swift/SwiftUI/Xcode-focused code review.
-default_prompt: Use ios-review to review my Swift and SwiftUI changes.
+interface:
+  display_name: "iOS Review"
+  short_description: "Run the iOS Review workflow"
+  default_prompt: "Use $ios-review to apply this workflow to the current repository."

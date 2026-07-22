@@ -1,2 +1,4 @@
-name: architecture-review
-description: Review codebase architecture for layer violations, dependency direction, coupling, cohesion, and god modules.
+interface:
+  display_name: "Architecture Review"
+  short_description: "Run the Architecture Review workflow"
+  default_prompt: "Use $architecture-review to apply this workflow to the current repository."

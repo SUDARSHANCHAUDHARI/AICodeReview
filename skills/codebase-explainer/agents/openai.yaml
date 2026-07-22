@@ -1,3 +1,4 @@
-display_name: Codebase Explainer
-short_description: Explain repo architecture, modules, and data flow.
-default_prompt: Use codebase-explainer to explain this repository.
+interface:
+  display_name: "Codebase Explainer"
+  short_description: "Run the Codebase Explainer workflow"
+  default_prompt: "Use $codebase-explainer to apply this workflow to the current repository."

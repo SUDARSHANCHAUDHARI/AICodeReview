@@ -1,2 +1,4 @@
-name: tech-debt-audit
-description: Audit codebase for TODO/FIXME/HACK markers, deprecated APIs, untested critical paths, hardcoded config, stale dependencies, dead feature flags, and estimate blast radius per item.
+interface:
+  display_name: "Technical Debt Audit"
+  short_description: "Run the Technical Debt Audit workflow"
+  default_prompt: "Use $tech-debt-audit to apply this workflow to the current repository."

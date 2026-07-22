@@ -1,3 +1,4 @@
-display_name: Release Review
-short_description: Check release readiness and blockers before shipping.
-default_prompt: Use release-review to check whether this build is ready to ship.
+interface:
+  display_name: "Release Review"
+  short_description: "Run the Release Review workflow"
+  default_prompt: "Use $release-review to apply this workflow to the current repository."

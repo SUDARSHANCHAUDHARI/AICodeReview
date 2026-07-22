@@ -1,2 +1,4 @@
-name: onboarding-writer
-description: Generate an ONBOARDING.md by reading the repo structure, README, build config, and key source files — no invented content, only verified facts.
+interface:
+  display_name: "Onboarding Writer"
+  short_description: "Run the Onboarding Writer workflow"
+  default_prompt: "Use $onboarding-writer to apply this workflow to the current repository."

@@ -1,3 +1,4 @@
-display_name: PR Summary
-short_description: Write a concise PR description from local changes.
-default_prompt: Use pr-summary to write a PR description for my current changes.
+interface:
+  display_name: "Pull Request Summary"
+  short_description: "Run the Pull Request Summary workflow"
+  default_prompt: "Use $pr-summary to apply this workflow to the current repository."

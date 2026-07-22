@@ -6,7 +6,9 @@
     "aicodereview": "bin/aicodereview.js"
   },
   "scripts": {
-    "test": "bash tests/run-all.sh"
+    "test": "bash tests/run-all.sh",
+    "validate": "bash scripts/validate.sh",
+    "generate": "python3 scripts/skill_artifacts.py sync-openai --write"
   },
   "keywords": [
     "ai",
@@ -42,6 +44,7 @@
     "update.sh",
     "list-installed.sh",
     "check-health.sh",
+    "scripts/",
     "skills/",
     "templates/",
     "examples/"

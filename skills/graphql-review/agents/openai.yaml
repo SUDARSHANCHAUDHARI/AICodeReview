@@ -1,2 +1,4 @@
-name: graphql-review
-description: Review GraphQL schema, resolvers, and client queries for N+1 problems, auth gaps, missing validation, complexity limits, and breaking changes.
+interface:
+  display_name: "GraphQL Review"
+  short_description: "Run the GraphQL Review workflow"
+  default_prompt: "Use $graphql-review to apply this workflow to the current repository."

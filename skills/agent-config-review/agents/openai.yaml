@@ -1,3 +1,4 @@
-display_name: Agent Config Review
-short_description: Review AI agent config files for quality, completeness, and security.
-default_prompt: Use agent-config-review to review my AI agent configuration files.
+interface:
+  display_name: "Agent Config Review"
+  short_description: "Run the Agent Config Review workflow"
+  default_prompt: "Use $agent-config-review to apply this workflow to the current repository."

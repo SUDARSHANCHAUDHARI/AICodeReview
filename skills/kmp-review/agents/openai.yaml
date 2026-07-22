@@ -1,3 +1,4 @@
-display_name: KMP Review
-short_description: Review Kotlin Multiplatform and Compose Multiplatform code.
-default_prompt: Use kmp-review to review my Kotlin Multiplatform changes.
+interface:
+  display_name: "Kotlin Multiplatform Review"
+  short_description: "Run the Kotlin Multiplatform Review workflow"
+  default_prompt: "Use $kmp-review to apply this workflow to the current repository."

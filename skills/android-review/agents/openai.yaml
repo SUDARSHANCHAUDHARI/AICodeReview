@@ -1,3 +1,4 @@
-display_name: Android Review
-short_description: Android/Kotlin/KMP/Compose-focused code review.
-default_prompt: Use android-review to review my Android changes.
+interface:
+  display_name: "Android Review"
+  short_description: "Run the Android Review workflow"
+  default_prompt: "Use $android-review to apply this workflow to the current repository."

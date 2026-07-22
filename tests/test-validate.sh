@@ -16,9 +16,16 @@ for path in \
   '.github/skills' \
   '.gemini/skills' \
   '.opencode/skills' \
+  '.aicodereview/skills' \
   'AICODEREVIEW.md'; do
   if grep -qF "$path" "$ROOT_DIR/install.sh"; then pass "Installer references $path"; else fail "Installer misses $path"; fi
 done
+
+if grep -qF '.aicodereview/skills/$PROBE_SKILL/SKILL.md' "$ROOT_DIR/update.sh"; then
+  pass "Updater detects selective Aider skills"
+else
+  fail "Updater misses selective Aider skills"
+fi
 
 if ! grep -q 'install_combined "copilot.md"' "$ROOT_DIR/install.sh"; then
   pass "Copilot no longer uses combined persistent instructions"

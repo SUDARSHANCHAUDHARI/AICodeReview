@@ -28,7 +28,7 @@ Agents:
   copilot   Remove managed native skills from <project>/.github/skills/
   gemini    Remove managed native skills from <project>/.gemini/skills/
   opencode  Remove managed native skills from <project>/.opencode/skills/
-  aider     Remove managed AICODEREVIEW.md and managed Aider config
+  aider     Remove managed Aider catalog, selective skills, and managed config
   all       Remove every current adapter (requires --project)
 
 Safety:
@@ -114,7 +114,8 @@ remove_opencode() {
 }
 
 remove_aider() {
-  remove_managed_file "$project_dir/AICODEREVIEW.md" "Aider conventions" "$dry_run"
+  remove_native_agent "$project_dir/.aicodereview/skills" "aider"
+  remove_managed_file "$project_dir/AICODEREVIEW.md" "Aider workflow catalog" "$dry_run"
   remove_managed_section \
     "$project_dir/.aider.conf.yml" \
     "$AIDER_CONFIG_START" \
@@ -122,6 +123,11 @@ remove_aider() {
     "managed Aider read configuration" \
     "$dry_run"
   remove_legacy_section "$project_dir/CONVENTIONS.md" "legacy Aider conventions"
+
+  if [[ "$dry_run" == false ]]; then
+    rmdir "$project_dir/.aicodereview/skills" 2>/dev/null || true
+    rmdir "$project_dir/.aicodereview" 2>/dev/null || true
+  fi
 
   if [[ -f "$project_dir/.aider.conf.yml" ]] && grep -qF "AICODEREVIEW.md" "$project_dir/.aider.conf.yml"; then
     echo "Note: user-managed .aider.conf.yml content still references AICODEREVIEW.md and was left unchanged."

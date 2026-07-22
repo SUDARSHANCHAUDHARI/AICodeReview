@@ -1,3 +1,0 @@
-## Docker Review
-
-When asked to review Docker config: check base image pinned to specific version/digest (not `latest`), minimal base image used, container runs as non-root (`USER` before CMD), no secrets in ENV/ARG/COPY/RUN (they persist in layers), multi-stage build excludes build tools and dev deps, `.dockerignore` excludes `.env`/`.git`/`node_modules`/keystores, RUN commands chained and cleaned in same layer, dependencies installed before source copy for layer caching, WORKDIR set explicitly, health check defined, PID 1 forwards signals. docker-compose: `depends_on` with health checks, no hardcoded secrets, port bindings restricted to localhost where appropriate. Rate findings P0–P3 with file:line references.
