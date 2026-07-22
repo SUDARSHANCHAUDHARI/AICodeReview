@@ -6,8 +6,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ROOT_DIR/aicodereview-lib.sh"
 load_skills "$ROOT_DIR"
 
-SECTION_START="# >>> AICodeReview START <<<"
-SECTION_END="# >>> AICodeReview END <<<"
+LEGACY_SECTION_START="# >>> AICodeReview START <<<"
+LEGACY_SECTION_END="# >>> AICodeReview END <<<"
+AIDER_CONFIG_START="# >>> AICodeReview Aider read START <<<"
+AIDER_CONFIG_END="# <<< AICodeReview Aider read END <<<"
 
 project_dir=""
 
@@ -15,9 +17,8 @@ usage() {
   cat <<'EOF_USAGE'
 Usage: ./check-health.sh [--project <path>]
 
-Checks managed Claude, Codex, Cursor, Copilot, Gemini, and Aider adapters.
-The command reports unmanaged conflicts, stale files, missing ownership markers,
-and corrupt combined-file marker sections.
+Checks managed Claude, Codex, Cursor, Copilot, Gemini, OpenCode, and Aider adapters.
+Reports stale content, unmanaged conflicts, incomplete migrations, and corrupt markers.
 EOF_USAGE
 }
 
@@ -44,14 +45,12 @@ fails=0
 pass() { echo "  PASS  $*"; }
 warn() { echo "  WARN  $*"; warns=$((warns + 1)); }
 fail() { echo "  FAIL  $*"; fails=$((fails + 1)); }
-
-same_file() {
-  cmp -s "$1" "$2"
-}
+same_file() { cmp -s "$1" "$2"; }
 
 check_native_agent() {
   local label="$1"
   local base="$2"
+  local check_openai="${3:-false}"
   local skill installed source
 
   echo ""
@@ -82,7 +81,7 @@ check_native_agent() {
       warn "$label/$skill: SKILL.md is stale"
     fi
 
-    if [[ -f "$source/agents/openai.yaml" ]]; then
+    if [[ "$check_openai" == true && -f "$source/agents/openai.yaml" ]]; then
       if [[ ! -f "$installed/agents/openai.yaml" ]]; then
         warn "$label/$skill: agents/openai.yaml is missing"
       elif same_file "$installed/agents/openai.yaml" "$source/agents/openai.yaml"; then
@@ -101,11 +100,6 @@ check_cursor() {
   echo ""
   echo "── cursor ───────────────────────────────────────────────"
 
-  if [[ ! -d "$rules_dir" ]]; then
-    warn "cursor: rules directory not found ($rules_dir)"
-    return
-  fi
-
   for skill in "${skills[@]}"; do
     installed="$rules_dir/$skill.mdc"
     source="$ROOT_DIR/skills/$skill/agents/cursor.mdc"
@@ -115,7 +109,7 @@ check_cursor() {
       continue
     fi
 
-    if ! is_managed_cursor_rule "$installed"; then
+    if ! is_managed_file "$installed"; then
       warn "cursor/$skill: rule exists but is not AICodeReview-managed"
       continue
     fi
@@ -128,83 +122,102 @@ check_cursor() {
   done
 }
 
-build_expected_section() {
-  local agent_file="$1"
-  local output="$2"
+check_legacy_removed() {
+  local label="$1"
+  local file="$2"
+  local state
+
+  state="$(managed_section_state "$file" "$LEGACY_SECTION_START" "$LEGACY_SECTION_END")"
+  case "$state" in
+    managed)
+      warn "$label: legacy managed section still exists in $file; rerun install with --force to migrate"
+      ;;
+    corrupt)
+      fail "$label: legacy markers are corrupt in $file"
+      ;;
+  esac
+}
+
+build_expected_aider_file() {
+  local output="$1"
   local skill source
 
-  : > "$output"
-  printf '%s\n\n' "$SECTION_START" >> "$output"
+  {
+    echo "# AICodeReview"
+    echo
+    echo "Generated review conventions. This file is managed by AICodeReview."
+    echo
+  } > "$output"
+
   for skill in "${skills[@]}"; do
-    source="$ROOT_DIR/skills/$skill/agents/$agent_file"
+    source="$ROOT_DIR/skills/$skill/agents/aider.md"
     cat "$source" >> "$output"
     printf '\n\n' >> "$output"
   done
-  printf '%s\n' "$SECTION_END" >> "$output"
 }
 
-check_combined_file() {
-  local label="$1"
-  local file="$2"
-  local agent_file="$3"
-  local state expected actual
+aider_config_references_file() {
+  local config_file="$1"
+  [[ -f "$config_file" ]] && grep -qF "AICODEREVIEW.md" "$config_file"
+}
+
+check_aider() {
+  local file="$project_dir/AICODEREVIEW.md"
+  local config="$project_dir/.aider.conf.yml"
+  local expected state
 
   echo ""
-  echo "── $label ───────────────────────────────────────────────"
+  echo "── aider ────────────────────────────────────────────────"
 
-  state="$(managed_section_state "$file" "$SECTION_START" "$SECTION_END")"
-  case "$state" in
-    absent)
-      warn "$label: file not found ($file)"
-      return
-      ;;
-    unmanaged)
-      warn "$label: file exists without an AICodeReview section"
-      return
-      ;;
-    corrupt)
-      fail "$label: managed section markers are corrupt"
-      return
-      ;;
-  esac
-
-  expected="$(mktemp "${TMPDIR:-/tmp}/aicodereview-expected.XXXXXX")"
-  actual="$(mktemp "${TMPDIR:-/tmp}/aicodereview-actual.XXXXXX")"
-  build_expected_section "$agent_file" "$expected"
-
-  awk -v start="$SECTION_START" -v end="$SECTION_END" '
-    $0 == start { capture=1 }
-    capture { print }
-    $0 == end { exit }
-  ' "$file" > "$actual"
-
-  if same_file "$actual" "$expected"; then
-    pass "$label: managed section is current"
+  if [[ ! -f "$file" ]]; then
+    warn "aider: AICODEREVIEW.md is missing"
+  elif ! is_managed_file "$file"; then
+    warn "aider: AICODEREVIEW.md exists but is not AICodeReview-managed"
   else
-    warn "$label: managed section is stale"
+    expected="$(mktemp "${TMPDIR:-/tmp}/aicodereview-aider-health.XXXXXX")"
+    build_expected_aider_file "$expected"
+    if same_file "$file" "$expected"; then
+      pass "aider: AICODEREVIEW.md is current"
+    else
+      warn "aider: AICODEREVIEW.md is stale"
+    fi
+    rm -f "$expected"
   fi
 
-  rm -f "$expected" "$actual"
+  state="$(managed_section_state "$config" "$AIDER_CONFIG_START" "$AIDER_CONFIG_END")"
+  if [[ "$state" == "corrupt" ]]; then
+    fail "aider: managed read markers are corrupt in $config"
+  elif aider_config_references_file "$config"; then
+    pass "aider: AICODEREVIEW.md is referenced by .aider.conf.yml"
+  else
+    warn "aider: AICODEREVIEW.md is not auto-loaded; add it to the read list in .aider.conf.yml"
+  fi
+
+  check_legacy_removed "aider" "$project_dir/CONVENTIONS.md"
 }
 
 echo "AICodeReview health check"
 echo "Source: $ROOT_DIR"
 
 check_native_agent "claude" "${CLAUDE_HOME:-$HOME/.claude}/skills"
-check_native_agent "codex" "${CODEX_HOME:-$HOME/.codex}/skills"
+check_native_agent "codex" "${CODEX_HOME:-$HOME/.codex}/skills" true
 
 if [[ -n "$project_dir" ]]; then
   if [[ ! -d "$project_dir" ]]; then
     echo "Error: project directory does not exist: $project_dir" >&2
     exit 1
   fi
+
   check_cursor
-  check_combined_file "copilot" "$project_dir/.github/copilot-instructions.md" "copilot.md"
-  check_combined_file "gemini" "$project_dir/GEMINI.md" "gemini.md"
-  check_combined_file "aider" "$project_dir/CONVENTIONS.md" "aider.md"
+  check_native_agent "copilot" "$project_dir/.github/skills"
+  check_legacy_removed "copilot" "$project_dir/.github/copilot-instructions.md"
+  check_native_agent "gemini" "$project_dir/.gemini/skills"
+  check_legacy_removed "gemini" "$project_dir/GEMINI.md"
+  check_native_agent "opencode" "$project_dir/.opencode/skills"
+  check_aider
 else
   echo ""
-  echo "Tip: pass --project <path> to also check Cursor, Copilot, Gemini, and Aider."
+  echo "Tip: pass --project <path> to also check Cursor, Copilot, Gemini, OpenCode, and Aider."
 fi
 
 echo ""
@@ -214,9 +227,7 @@ echo "════════════════════════�
 echo "  WARN: $warns"
 echo "  FAIL: $fails"
 
-if [[ "$fails" -gt 0 ]]; then
-  exit 1
-elif [[ "$warns" -gt 0 ]]; then
+if [[ "$fails" -gt 0 || "$warns" -gt 0 ]]; then
   exit 1
 fi
 
