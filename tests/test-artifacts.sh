@@ -33,6 +33,7 @@ grep -q '^# Code Review$' "$cursor" && pass "Cursor rule contains canonical work
 aider="$TMP_ROOT/AICODEREVIEW.md"
 python3 "$ROOT_DIR/scripts/skill_artifacts.py" render-aider --output "$aider"
 grep -q '^## Code Review$' "$aider" && pass "Aider output contains Code Review" || fail "Aider output omitted Code Review"
+grep -q '^### Workflow$' "$aider" && pass "Aider nested headings are demoted" || fail "Aider heading hierarchy is invalid"
 grep -q '^## Onboarding Writer$' "$aider" && pass "Aider output contains final discovered skill" || fail "Aider output omitted final skill"
 
 openai="$ROOT_DIR/skills/code-review/agents/openai.yaml"
