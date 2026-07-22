@@ -2,7 +2,7 @@
 
 Portable code-review workflows for multiple AI coding agents.
 
-AICodeReview keeps every workflow in one canonical `SKILL.md`. Native agents receive that directory directly. Cursor rules, Aider conventions, and OpenAI product metadata are generated deterministically from the same source.
+AICodeReview keeps every workflow in one canonical `SKILL.md`. Native agents receive that directory directly. Cursor rules, a compact Aider catalog, and OpenAI product metadata are generated deterministically from the same source.
 
 ## Skills
 
@@ -52,9 +52,9 @@ The installer discovers skill directories dynamically. Adding a skill does not r
 | Gemini CLI | Native Agent Skill | `<project>/.gemini/skills/` | Discovered and activated through `activate_skill` |
 | OpenCode | Native Agent Skill | `<project>/.opencode/skills/` | Loaded on demand through the native skill tool |
 | Cursor | Generated project rule | `<project>/.cursor/rules/` | Generated from `SKILL.md` during installation |
-| Aider | Generated conventions file | `<project>/AICODEREVIEW.md` | Generated from all canonical skills and loaded through `.aider.conf.yml` |
+| Aider | Catalog plus selective skill files | `<project>/AICODEREVIEW.md` and `<project>/.aicodereview/skills/` | Catalog is auto-loaded; the requested workflow is loaded with `/read` |
 
-Native skills are not copied into persistent Copilot or Gemini instruction files.
+Native skills are not copied into persistent Copilot or Gemini instruction files. Aider does not preload all 31 workflows into every session.
 
 ## Canonical structure
 
@@ -78,9 +78,14 @@ interface:
 
 All metadata strings are quoted. Short descriptions are 25–64 characters, and every default prompt explicitly invokes its skill.
 
-## Install
+## Requirements
 
-Clone the repository:
+- Bash
+- Python 3.8 or later
+
+Phase 2 will replace the Bash and Python installer with a cross-platform TypeScript CLI.
+
+## Install
 
 ```bash
 git clone https://github.com/SUDARSHANCHAUDHARI/AICodeReview.git
@@ -145,7 +150,7 @@ python3 scripts/skill_artifacts.py render-cursor \
   --output /tmp/code-review.mdc
 ```
 
-Preview the generated Aider conventions:
+Preview the compact Aider catalog:
 
 ```bash
 python3 scripts/skill_artifacts.py render-aider \
@@ -153,6 +158,20 @@ python3 scripts/skill_artifacts.py render-aider \
 ```
 
 Do not create or maintain `cursor.mdc`, `copilot.md`, `gemini.md`, or `aider.md` inside individual skill directories. Validation rejects those obsolete duplicate adapters.
+
+## Aider workflow activation
+
+The installer writes a compact catalog to `AICODEREVIEW.md` and copies managed skill directories to `.aicodereview/skills/`.
+
+Load only the workflow needed for the current task:
+
+```text
+/read .aicodereview/skills/code-review/SKILL.md
+```
+
+Then ask Aider to use `code-review`.
+
+This avoids loading every full workflow into every Aider session.
 
 ## Legacy migration
 
@@ -168,9 +187,10 @@ Without `--force`, unmanaged conflicts stop installation. With `--force`, existi
 
 For Aider:
 
-- If `.aider.conf.yml` has no `read` setting, the installer adds a managed block for `AICODEREVIEW.md`.
+- If `.aider.conf.yml` has no `read` setting, the installer adds a managed block for the compact `AICODEREVIEW.md` catalog.
 - If a user-managed `read` setting exists, it remains unchanged.
 - The installer never creates a duplicate top-level `read` key.
+- Selective skill directories are removed only when they carry an AICodeReview ownership marker.
 
 ## Use
 
@@ -201,13 +221,13 @@ Document the actual stack, architecture, conventions, verification commands, and
 ./check-health.sh --project /path/to/project
 ```
 
-`check-health.sh` renders expected Cursor and Aider output from `SKILL.md` before comparing installed files. It also verifies OpenAI metadata, ownership markers, incomplete migrations, Aider activation, and corrupt marker states.
+`check-health.sh` renders expected Cursor and Aider catalog output before comparing installed files. It also verifies OpenAI metadata, selective Aider skill directories, ownership markers, incomplete migrations, Aider activation, and corrupt marker states.
 
 ## Uninstall
 
 ```bash
 ./uninstall.sh --agent claude
-./uninstall.sh --agent copilot --project /path/to/project
+./uninstall.sh --agent aider --project /path/to/project
 ./uninstall.sh --agent all --project /path/to/project
 ```
 
@@ -220,7 +240,7 @@ User-owned paths and configuration remain untouched.
 ./tests/run-all.sh
 ```
 
-Validation rejects metadata drift and obsolete duplicated adapters. Behavioral tests cover generation, installation, migration, backups, inventory, Aider configuration, all-agent preflight, and uninstall.
+Validation rejects metadata drift and obsolete duplicated adapters. Behavioral tests cover generation, installation, migration, backups, inventory, selective Aider loading, all-agent preflight, and uninstall.
 
 ## Design principles
 
@@ -235,7 +255,7 @@ Validation rejects metadata drift and obsolete duplicated adapters. Behavioral t
 ## Roadmap
 
 - **Phase 0:** Installation ownership, migration safety, native Copilot and Gemini support, OpenCode support, Aider activation, and CI.
-- **Phase 1:** Canonical workflow source, standardized OpenAI metadata, and generated Cursor/Aider adapters.
+- **Phase 1:** Canonical workflow source, standardized OpenAI metadata, generated Cursor rules, and selective Aider workflow loading.
 - **Phase 2:** Cross-platform TypeScript CLI and Windows coverage.
 - **Phase 3:** Optional hooks and behavioral evaluation repositories.
 
