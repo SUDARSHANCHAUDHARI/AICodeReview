@@ -1,3 +1,0 @@
-## API Design Review
-
-When asked to review API design: REST — resource names are nouns/plural/hyphenated, HTTP methods correct (GET side-effect free, POST creates, PUT replaces, PATCH updates, DELETE removes), status codes correct (201+Location for created, 204 for delete, 400/401/403/404/409/422/429/500), all list endpoints paginated, consistent error shape (code+message+field errors), no stack traces in responses, API version explicit, breaking changes only in new version, deprecation via Deprecation/Sunset headers. GraphQL — list fields paginated, mutations return mutated object, N+1 protected via DataLoader, `@deprecated` before removal. Identify breaking vs non-breaking changes explicitly. Rate findings P0–P3 with file:line references.

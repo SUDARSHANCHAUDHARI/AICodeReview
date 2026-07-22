@@ -1,3 +1,0 @@
-## Dependency Audit
-
-When asked to audit dependencies: identify the package manager and manifest files (package.json, build.gradle.kts, Podfile, Package.swift, requirements.txt, Cargo.toml, go.mod). Check for: outdated direct dependencies (security-sensitive libs first), known CVEs via npm audit/Gradle dep check/pip-audit/cargo audit, abandoned packages (no commits 2+ years, many open issues), licence incompatibilities (GPL/AGPL/SSPL in proprietary apps, no-licence packages), and dev deps accidentally in production bundles. Rate findings CRITICAL/HIGH/MEDIUM/LOW. Do not upgrade or edit files unless explicitly asked.

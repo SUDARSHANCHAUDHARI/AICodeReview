@@ -1,3 +1,0 @@
-## Test Writer
-
-When asked to generate tests: read the target code to understand its behaviour, inputs, outputs, and failure modes. Read existing tests to match the framework, naming conventions, and assertion style exactly. Write tests covering: happy path, edge cases (empty, zero, max, single item, duplicates), error cases (invalid input, null/nil, network failure, DB error), state changes, and side effects via mocks. Do not test implementation details — test observable behaviour. One assertion concept per test. Never write tests that always pass. Prefer real objects over mocks where setup cost is low. Run the test suite after writing and report results.
