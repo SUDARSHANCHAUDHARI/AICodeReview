@@ -8,12 +8,12 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "test": "npm run test:node",
-    "test:node": "npm run build && node --test tests/node-cli.test.js",
-    "test:shell": "bash tests/run-all.sh",
+    "test": "npm run clean && npm run build && node --test tests/node-cli.test.js",
     "validate": "npm run build && node bin/aicodereview.js validate",
     "generate": "npm run build && node bin/aicodereview.js generate --write",
-    "prepack": "npm run clean && npm run build"
+    "pack:check": "npm run clean && npm run build && npm pack --dry-run",
+    "prepack": "npm run clean && npm run build",
+    "prepublishOnly": "npm test && npm run pack:check"
   },
   "keywords": [
     "ai",
@@ -44,17 +44,11 @@
   "files": [
     "bin/",
     "dist/",
-    "src/",
-    "aicodereview-lib.sh",
-    "install.sh",
-    "uninstall.sh",
-    "update.sh",
-    "list-installed.sh",
-    "check-health.sh",
-    "scripts/",
     "skills/",
     "templates/",
-    "examples/"
+    "examples/",
+    "README.md",
+    "LICENSE"
   ],
   "devDependencies": {
     "@types/node": "22.15.0",
