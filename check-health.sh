@@ -18,7 +18,7 @@ usage() {
   cat <<'EOF_USAGE'
 Usage: ./check-health.sh [--project <path>]
 
-Checks managed native skills and generated Cursor/Aider adapters.
+Checks managed native skills and generated Cursor/Aider artifacts.
 Reports stale files, unmanaged conflicts, incomplete migrations, and corrupt markers.
 EOF_USAGE
 }
@@ -48,11 +48,17 @@ warn() { echo "  WARN  $*"; warns=$((warns + 1)); }
 fail() { echo "  FAIL  $*"; fails=$((fails + 1)); }
 same_file() { cmp -s "$1" "$2"; }
 
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "  FAIL  python3 is required for artifact health checks"
+  exit 1
+fi
 if ! python3 "$ARTIFACT_SCRIPT" validate >/dev/null 2>&1; then
-  fail "canonical skill artifacts are invalid"
+  echo "  FAIL  canonical skill artifacts are invalid"
+  exit 1
 fi
 if ! python3 "$ARTIFACT_SCRIPT" sync-openai --check >/dev/null 2>&1; then
-  fail "OpenAI metadata is stale"
+  echo "  FAIL  OpenAI metadata is stale"
+  exit 1
 fi
 
 check_native_agent() {
@@ -147,25 +153,25 @@ aider_config_references_file() {
   [[ -f "$config_file" ]] && grep -qF "AICODEREVIEW.md" "$config_file"
 }
 
-check_aider() {
-  local file="$project_dir/AICODEREVIEW.md"
+check_aider_catalog() {
+  local catalog="$project_dir/AICODEREVIEW.md"
   local config="$project_dir/.aider.conf.yml"
   local expected state
 
   echo
-  echo "── aider ────────────────────────────────────────────────"
+  echo "── aider catalog ────────────────────────────────────────"
 
-  if [[ ! -f "$file" ]]; then
-    warn "aider: AICODEREVIEW.md is missing"
-  elif ! is_managed_file "$file"; then
+  if [[ ! -f "$catalog" ]]; then
+    warn "aider: AICODEREVIEW.md catalog is missing"
+  elif ! is_managed_file "$catalog"; then
     warn "aider: AICODEREVIEW.md exists but is not AICodeReview-managed"
   else
     expected="$(mktemp "${TMPDIR:-/tmp}/aicodereview-aider-health.XXXXXX")"
     python3 "$ARTIFACT_SCRIPT" render-aider --output "$expected"
-    if same_file "$file" "$expected"; then
-      pass "aider: generated conventions are current"
+    if same_file "$catalog" "$expected"; then
+      pass "aider: compact workflow catalog is current"
     else
-      warn "aider: generated conventions are stale"
+      warn "aider: compact workflow catalog is stale"
     fi
     rm -f "$expected"
   fi
@@ -174,9 +180,9 @@ check_aider() {
   if [[ "$state" == "corrupt" ]]; then
     fail "aider: managed read markers are corrupt"
   elif aider_config_references_file "$config"; then
-    pass "aider: AICODEREVIEW.md is referenced by .aider.conf.yml"
+    pass "aider: AICODEREVIEW.md catalog is referenced by .aider.conf.yml"
   else
-    warn "aider: AICODEREVIEW.md is not auto-loaded"
+    warn "aider: AICODEREVIEW.md catalog is not auto-loaded"
   fi
 
   check_legacy_removed "aider" "$project_dir/CONVENTIONS.md"
@@ -196,7 +202,8 @@ if [[ -n "$project_dir" ]]; then
   check_native_agent "gemini" "$project_dir/.gemini/skills"
   check_legacy_removed "gemini" "$project_dir/GEMINI.md"
   check_native_agent "opencode" "$project_dir/.opencode/skills"
-  check_aider
+  check_native_agent "aider" "$project_dir/.aicodereview/skills"
+  check_aider_catalog
 else
   echo
   echo "Tip: pass --project <path> to check project-scoped integrations."
