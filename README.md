@@ -2,7 +2,7 @@
 
 Portable code-review workflows for multiple AI coding agents.
 
-AICodeReview keeps every workflow in one canonical `SKILL.md`. Native agents receive that directory directly. Cursor rules, a compact Aider catalog, and OpenAI product metadata are generated deterministically from the same source.
+AICodeReview keeps every workflow in one canonical `SKILL.md`. Native agents receive that directory directly. Cursor rules, a compact Aider catalog, and OpenAI product metadata are generated from the same source.
 
 ## Skills
 
@@ -40,7 +40,7 @@ AICodeReview keeps every workflow in one canonical `SKILL.md`. Native agents rec
 | `tech-debt-audit` | Find and prioritize TODOs, deprecated APIs, untested critical paths, and dead flags |
 | `onboarding-writer` | Generate `ONBOARDING.md` from actual repository inspection |
 
-The installer discovers skill directories dynamically. Adding a skill does not require editing a hard-coded list.
+The CLI discovers skill directories dynamically. Adding a skill does not require editing a hard-coded list.
 
 ## Agent support
 
@@ -54,7 +54,7 @@ The installer discovers skill directories dynamically. Adding a skill does not r
 | Cursor | Generated project rule | `<project>/.cursor/rules/` | Generated from `SKILL.md` during installation |
 | Aider | Catalog plus selective skill files | `<project>/AICODEREVIEW.md` and `<project>/.aicodereview/skills/` | Catalog is auto-loaded; the requested workflow is loaded with `/read` |
 
-Native skills are not copied into persistent Copilot or Gemini instruction files. Aider does not preload all 31 workflows into every session.
+Native skills are not copied into persistent Copilot or Gemini instruction files. Aider does not preload all 31 full workflows into every session.
 
 ## Canonical structure
 
@@ -67,7 +67,7 @@ skills/<skill-name>/
 
 `SKILL.md` is the only workflow source.
 
-`agents/openai.yaml` contains generated product-facing metadata:
+Generated OpenAI metadata uses:
 
 ```yaml
 interface:
@@ -76,88 +76,104 @@ interface:
   default_prompt: "Use $code-review to apply this workflow to the current repository."
 ```
 
-All metadata strings are quoted. Short descriptions are 25–64 characters, and every default prompt explicitly invokes its skill.
-
 ## Requirements
 
-- Bash
-- Python 3.8 or later
+The cross-platform CLI requires Node.js 18 or later.
 
-Phase 2 will replace the Bash and Python installer with a cross-platform TypeScript CLI.
+Bash and Python remain temporarily required only for the legacy `list-installed.sh`, `check-health.sh`, and `update.sh` maintenance commands. Phase 2B will move those commands to Node.js.
 
-## Install
+## Build from the repository
 
 ```bash
 git clone https://github.com/SUDARSHANCHAUDHARI/AICodeReview.git
 cd AICodeReview
+npm install
+npm run build
 ```
+
+## Cross-platform CLI
 
 Install Claude Code and Codex:
 
 ```bash
-./install.sh
+node bin/aicodereview.js install
 ```
 
-Install a project-scoped integration:
+Install one project integration:
 
 ```bash
-./install.sh --agent cursor   --project /path/to/project
-./install.sh --agent copilot  --project /path/to/project
-./install.sh --agent gemini   --project /path/to/project
-./install.sh --agent opencode --project /path/to/project
-./install.sh --agent aider    --project /path/to/project
+node bin/aicodereview.js install --agent cursor   --project /path/to/project
+node bin/aicodereview.js install --agent copilot  --project /path/to/project
+node bin/aicodereview.js install --agent gemini   --project /path/to/project
+node bin/aicodereview.js install --agent opencode --project /path/to/project
+node bin/aicodereview.js install --agent aider    --project /path/to/project
 ```
 
-Install every current adapter:
+Install everything:
 
 ```bash
-./install.sh --agent all --project /path/to/project
+node bin/aicodereview.js install --agent all --project /path/to/project
 ```
 
-The all-agent command preflights every destination, generated artifact, and migration marker before writing the first file.
-
-Preview changes:
+Preview without writing:
 
 ```bash
-./install.sh --agent all --project /path/to/project --dry-run
+node bin/aicodereview.js install --agent all --project /path/to/project --dry-run
 ```
 
-Update managed installations:
+Update managed paths and back up unmanaged conflicts:
 
 ```bash
-./install.sh --agent all --project /path/to/project --force
+node bin/aicodereview.js install --agent all --project /path/to/project --force
 ```
 
-## Generated artifacts
-
-Verify committed OpenAI metadata:
+The old flag-only form remains supported:
 
 ```bash
-python3 scripts/skill_artifacts.py sync-openai --check
+node bin/aicodereview.js --agent claude
 ```
 
-Regenerate it after adding or renaming a skill:
+When installed as an npm command, replace `node bin/aicodereview.js` with `aicodereview` or `npx aicodereview`.
+
+## Installation safety
+
+The Node CLI preserves the Phase 0 and Phase 1 safety rules:
+
+- Every managed skill directory and generated file receives an ownership marker.
+- Unmanaged conflicts stop installation unless `--force` is used.
+- `--force` moves unmanaged content to a timestamped backup before replacement.
+- Corrupt legacy markers stop migration before replacement paths are written.
+- `--agent all` preflights every global and project destination before the first write.
+- Uninstall removes only ownership-marked content.
+
+## Generate and validate
+
+Validate all canonical skills and committed metadata:
 
 ```bash
-python3 scripts/skill_artifacts.py sync-openai --write
+node bin/aicodereview.js validate
 ```
 
-Preview one generated Cursor rule:
+Check generated OpenAI metadata:
 
 ```bash
-python3 scripts/skill_artifacts.py render-cursor \
-  --skill code-review \
-  --output /tmp/code-review.mdc
+node bin/aicodereview.js generate --check
 ```
 
-Preview the compact Aider catalog:
+Regenerate metadata:
 
 ```bash
-python3 scripts/skill_artifacts.py render-aider \
-  --output /tmp/AICODEREVIEW.md
+node bin/aicodereview.js generate --write
 ```
 
-Do not create or maintain `cursor.mdc`, `copilot.md`, `gemini.md`, or `aider.md` inside individual skill directories. Validation rejects those obsolete duplicate adapters.
+Equivalent npm scripts:
+
+```bash
+npm run validate
+npm run generate
+```
+
+Do not create `cursor.mdc`, `copilot.md`, `gemini.md`, or `aider.md` inside individual skill directories. Validation rejects those obsolete duplicate adapters.
 
 ## Aider workflow activation
 
@@ -171,26 +187,11 @@ Load only the workflow needed for the current task:
 
 Then ask Aider to use `code-review`.
 
-This avoids loading every full workflow into every Aider session.
-
 ## Legacy migration
 
-Older releases appended AICodeReview content to `.github/copilot-instructions.md`, `GEMINI.md`, and `CONVENTIONS.md`.
+Older releases appended managed content to `.github/copilot-instructions.md`, `GEMINI.md`, and `CONVENTIONS.md`.
 
-The installer validates the managed marker pair, installs the replacement, then removes only the managed legacy section. User-owned content outside the markers is preserved. Corrupt markers stop migration before replacement files are written.
-
-## Installation safety
-
-AICodeReview writes ownership markers into native skill directories and beside generated files.
-
-Without `--force`, unmanaged conflicts stop installation. With `--force`, existing content is moved to a timestamped backup before replacement. Uninstall removes only managed paths.
-
-For Aider:
-
-- If `.aider.conf.yml` has no `read` setting, the installer adds a managed block for the compact `AICODEREVIEW.md` catalog.
-- If a user-managed `read` setting exists, it remains unchanged.
-- The installer never creates a duplicate top-level `read` key.
-- Selective skill directories are removed only when they carry an AICodeReview ownership marker.
+The CLI validates the marker pair, installs the replacement, then removes only the managed legacy section. User-owned content outside the markers remains unchanged.
 
 ## Use
 
@@ -213,7 +214,9 @@ cp templates/PROJECT_CONTEXT.md /path/to/project/PROJECT_CONTEXT.md
 
 Document the actual stack, architecture, conventions, verification commands, and migration constraints. Skills read this file when present.
 
-## Maintenance
+## Temporary shell maintenance commands
+
+Until Phase 2B:
 
 ```bash
 ./update.sh --project /path/to/project
@@ -221,26 +224,31 @@ Document the actual stack, architecture, conventions, verification commands, and
 ./check-health.sh --project /path/to/project
 ```
 
-`check-health.sh` renders expected Cursor and Aider catalog output before comparing installed files. It also verifies OpenAI metadata, selective Aider skill directories, ownership markers, incomplete migrations, Aider activation, and corrupt marker states.
-
 ## Uninstall
 
 ```bash
-./uninstall.sh --agent claude
-./uninstall.sh --agent aider --project /path/to/project
-./uninstall.sh --agent all --project /path/to/project
+node bin/aicodereview.js uninstall --agent claude
+node bin/aicodereview.js uninstall --agent aider --project /path/to/project
+node bin/aicodereview.js uninstall --agent all --project /path/to/project
 ```
 
 User-owned paths and configuration remain untouched.
 
 ## Validate and test
 
+Cross-platform Node tests:
+
 ```bash
-./scripts/validate.sh
-./tests/run-all.sh
+npm test
 ```
 
-Validation rejects metadata drift and obsolete duplicated adapters. Behavioral tests cover generation, installation, migration, backups, inventory, selective Aider loading, all-agent preflight, and uninstall.
+Shell compatibility tests:
+
+```bash
+npm run test:shell
+```
+
+GitHub Actions runs the Node CLI suite on Ubuntu, macOS, and Windows. Shell compatibility remains covered on Ubuntu and macOS.
 
 ## Design principles
 
@@ -254,9 +262,10 @@ Validation rejects metadata drift and obsolete duplicated adapters. Behavioral t
 
 ## Roadmap
 
-- **Phase 0:** Installation ownership, migration safety, native Copilot and Gemini support, OpenCode support, Aider activation, and CI.
-- **Phase 1:** Canonical workflow source, standardized OpenAI metadata, generated Cursor rules, and selective Aider workflow loading.
-- **Phase 2:** Cross-platform TypeScript CLI and Windows coverage.
+- **Phase 0:** Installation ownership, migration safety, native multi-agent support, and CI.
+- **Phase 1:** Canonical workflow source, standardized metadata, generated Cursor rules, and selective Aider loading.
+- **Phase 2A:** Cross-platform Node and TypeScript install, uninstall, validate, and generate commands.
+- **Phase 2B:** Cross-platform list, health, update, release packaging, and retirement of runtime Bash/Python requirements.
 - **Phase 3:** Optional hooks and behavioral evaluation repositories.
 
 ## Contributing
