@@ -94,6 +94,8 @@ Install every current adapter:
 ./install.sh --agent all --project /path/to/project
 ```
 
+The all-agent command preflights every destination and migration marker before writing the first file, so a late conflict cannot leave a partial installation.
+
 Preview changes:
 
 ```bash
@@ -186,7 +188,7 @@ User-owned paths and configuration remain untouched.
 ./tests/run-all.sh
 ```
 
-The behavioral tests exercise real installation, migration, backup, inventory, Aider configuration, and uninstall scenarios. GitHub Actions runs validation and tests on Ubuntu and macOS.
+The behavioral tests exercise real installation, migration, backup, inventory, Aider configuration, all-agent preflight, and uninstall scenarios. GitHub Actions runs validation and tests on Ubuntu and macOS.
 
 ## Design principles
 
