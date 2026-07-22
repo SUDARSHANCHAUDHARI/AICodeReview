@@ -1,40 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# update.sh — pull latest and reinstall for detected agents
-
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=aicodereview-lib.sh
+source "$ROOT_DIR/aicodereview-lib.sh"
 
 project_dir=""
 dry_run=false
 
 usage() {
-  cat <<'EOF'
+  cat <<'EOF_USAGE'
 Usage: ./update.sh [--project <path>] [--dry-run]
 
 Options:
-  --project <path>   Required for cursor, copilot, gemini, and aider detection.
+  --project <path>   Include project-scoped adapters in detection.
   --dry-run          Show what would happen without writing files.
   --help             Show this help message.
 
-Description:
-  Pulls the latest changes from git and re-runs install.sh for every
-  agent that is currently detected as installed.
-
-  Detection logic:
-    claude   ~/.claude/skills/code-review/SKILL.md exists
-    codex    ~/.codex/skills/code-review/SKILL.md exists
-    cursor   <project>/.cursor/rules/code-review.mdc exists
-    copilot  <project>/.github/copilot-instructions.md contains AICodeReview section
-    gemini   <project>/GEMINI.md contains AICodeReview section
-    aider    <project>/CONVENTIONS.md contains AICodeReview section
-EOF
+Detection supports both Phase 0B native paths and legacy managed sections so
+existing Copilot, Gemini, and Aider installations migrate during update.
+EOF_USAGE
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project)
-      project_dir="${2:-}"
+      [[ $# -ge 2 ]] || { echo "Error: --project requires a value" >&2; exit 1; }
+      project_dir="$2"
       shift 2
       ;;
     --dry-run)
@@ -53,10 +45,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-SECTION_START="# >>> AICodeReview START <<<"
+LEGACY_SECTION_START="# >>> AICodeReview START <<<"
+LEGACY_SECTION_END="# >>> AICodeReview END <<<"
 PROBE_SKILL="code-review"
-
-# ── 1. Pull latest ───────────────────────────────────────────────────────────
 
 cd "$ROOT_DIR"
 
@@ -68,49 +59,47 @@ else
   echo ""
 fi
 
-# ── 2. Detect installed agents ───────────────────────────────────────────────
-
 detected_agents=()
-
 CLAUDE_SKILLS="${CLAUDE_HOME:-$HOME/.claude}/skills"
 CODEX_SKILLS="${CODEX_HOME:-$HOME/.codex}/skills"
 
 [[ -f "$CLAUDE_SKILLS/$PROBE_SKILL/SKILL.md" ]] && detected_agents+=("claude")
-[[ -f "$CODEX_SKILLS/$PROBE_SKILL/SKILL.md" ]]  && detected_agents+=("codex")
+[[ -f "$CODEX_SKILLS/$PROBE_SKILL/SKILL.md" ]] && detected_agents+=("codex")
+
+legacy_is_managed() {
+  [[ "$(managed_section_state "$1" "$LEGACY_SECTION_START" "$LEGACY_SECTION_END")" == "managed" ]]
+}
 
 if [[ -n "$project_dir" ]]; then
   [[ -f "$project_dir/.cursor/rules/$PROBE_SKILL.mdc" ]] && detected_agents+=("cursor")
 
-  if [[ -f "$project_dir/.github/copilot-instructions.md" ]]; then
-    grep -qF "$SECTION_START" "$project_dir/.github/copilot-instructions.md" \
-      && detected_agents+=("copilot")
+  if [[ -f "$project_dir/.github/skills/$PROBE_SKILL/SKILL.md" ]] || \
+     legacy_is_managed "$project_dir/.github/copilot-instructions.md"; then
+    detected_agents+=("copilot")
   fi
 
-  if [[ -f "$project_dir/GEMINI.md" ]]; then
-    grep -qF "$SECTION_START" "$project_dir/GEMINI.md" \
-      && detected_agents+=("gemini")
+  if [[ -f "$project_dir/.gemini/skills/$PROBE_SKILL/SKILL.md" ]] || \
+     legacy_is_managed "$project_dir/GEMINI.md"; then
+    detected_agents+=("gemini")
   fi
 
-  if [[ -f "$project_dir/CONVENTIONS.md" ]]; then
-    grep -qF "$SECTION_START" "$project_dir/CONVENTIONS.md" \
-      && detected_agents+=("aider")
+  [[ -f "$project_dir/.opencode/skills/$PROBE_SKILL/SKILL.md" ]] && detected_agents+=("opencode")
+
+  if [[ -f "$project_dir/AICODEREVIEW.md" ]] || legacy_is_managed "$project_dir/CONVENTIONS.md"; then
+    detected_agents+=("aider")
   fi
 fi
-
-# ── 3. Report detection ──────────────────────────────────────────────────────
 
 if [[ "${#detected_agents[@]}" -eq 0 ]]; then
   echo "No installed agents detected."
   if [[ -z "$project_dir" ]]; then
-    echo "Tip: pass --project <path> to detect cursor, copilot, gemini, and aider."
+    echo "Tip: pass --project <path> to detect project-scoped adapters."
   fi
   exit 0
 fi
 
 echo "Detected agents: ${detected_agents[*]}"
 echo ""
-
-# ── 4. Reinstall for each detected agent ─────────────────────────────────────
 
 project_flags=()
 [[ -n "$project_dir" ]] && project_flags=("--project" "$project_dir")
@@ -122,7 +111,6 @@ failed=()
 
 for ag in "${detected_agents[@]}"; do
   echo "── Reinstalling: $ag ──"
-
   install_args=("--agent" "$ag" "--force" "${project_flags[@]+"${project_flags[@]}"}" "${dry_flags[@]+"${dry_flags[@]}"}")
 
   if "$ROOT_DIR/install.sh" "${install_args[@]}"; then
@@ -131,27 +119,19 @@ for ag in "${detected_agents[@]}"; do
     failed+=("$ag")
     echo "ERROR: install failed for agent '$ag'" >&2
   fi
-
   echo ""
 done
-
-# ── 5. Summary ───────────────────────────────────────────────────────────────
 
 echo "════════════════════════════════"
 echo "Update summary"
 echo "════════════════════════════════"
 
-if [[ "${#updated[@]}" -gt 0 ]]; then
-  for ag in "${updated[@]}"; do
-    echo "  OK   $ag"
-  done
-fi
-
-if [[ "${#failed[@]}" -gt 0 ]]; then
-  for ag in "${failed[@]}"; do
-    echo "  FAIL $ag"
-  done
-fi
+for ag in "${updated[@]}"; do
+  echo "  OK   $ag"
+done
+for ag in "${failed[@]}"; do
+  echo "  FAIL $ag"
+done
 
 echo ""
 if [[ "$dry_run" == true ]]; then
@@ -160,5 +140,5 @@ elif [[ "${#failed[@]}" -gt 0 ]]; then
   echo "Update finished with ${#failed[@]} failure(s). Check output above."
   exit 1
 else
-  echo "All agents updated successfully."
+  echo "All detected agents updated successfully."
 fi
