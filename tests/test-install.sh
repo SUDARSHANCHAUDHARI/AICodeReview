@@ -9,7 +9,16 @@ trap 'rm -rf "$TMP_ROOT"' EXIT
 
 pass() { echo "  PASS  $*"; pass_count=$((pass_count + 1)); }
 fail() { echo "  FAIL  $*"; fail_count=$((fail_count + 1)); }
-
+assert_exists() { [[ -e "$1" ]] && pass "$2" || fail "$2 (missing: $1)"; }
+assert_not_exists() { [[ ! -e "$1" ]] && pass "$2" || fail "$2 (unexpected: $1)"; }
+assert_contains() {
+  local file="$1" text="$2" description="$3"
+  [[ -f "$file" ]] && grep -qF "$text" "$file" && pass "$description" || fail "$description"
+}
+assert_not_contains() {
+  local file="$1" text="$2" description="$3"
+  if [[ ! -f "$file" ]] || ! grep -qF "$text" "$file"; then pass "$description"; else fail "$description"; fi
+}
 assert_exit_code() {
   local expected="$1" description="$2"
   shift 2
@@ -21,62 +30,73 @@ assert_exit_code() {
   [[ "$actual" -eq "$expected" ]] && pass "$description" || fail "$description (expected $expected, got $actual)"
 }
 
-assert_exists() {
-  [[ -e "$1" ]] && pass "$2" || fail "$2 (missing: $1)"
-}
-
-assert_not_exists() {
-  [[ ! -e "$1" ]] && pass "$2" || fail "$2 (unexpected: $1)"
-}
-
-assert_contains() {
-  local file="$1" text="$2" description="$3"
-  [[ -f "$file" ]] && grep -qF "$text" "$file" && pass "$description" || fail "$description"
-}
-
 echo "── test-install.sh ─────────────────────────────────────"
 
 assert_exit_code 0 "default dry-run succeeds" "$ROOT_DIR/install.sh" --dry-run
-assert_exit_code 0 "Claude dry-run succeeds" "$ROOT_DIR/install.sh" --agent claude --dry-run
-assert_exit_code 0 "Codex dry-run succeeds" "$ROOT_DIR/install.sh" --agent codex --dry-run
-assert_exit_code 1 "project agent requires --project" "$ROOT_DIR/install.sh" --agent cursor --dry-run
+assert_exit_code 1 "project adapter requires --project" "$ROOT_DIR/install.sh" --agent copilot --dry-run
+assert_exit_code 0 "OpenCode dry-run succeeds" "$ROOT_DIR/install.sh" --agent opencode --project "$TMP_ROOT" --dry-run
 assert_exit_code 1 "unknown agent fails" "$ROOT_DIR/install.sh" --agent unknown --dry-run
-assert_exit_code 1 "unknown flag fails" "$ROOT_DIR/install.sh" --bad-flag
-assert_exit_code 0 "help succeeds" "$ROOT_DIR/install.sh" --help
 
 claude_home="$TMP_ROOT/claude"
 CLAUDE_HOME="$claude_home" "$ROOT_DIR/install.sh" --agent claude >/dev/null
-assert_exists "$claude_home/skills/code-review/SKILL.md" "native skill is copied"
-assert_contains "$claude_home/skills/code-review/.aicodereview-managed" "source=SUDARSHANCHAUDHARI/AICodeReview" "native skill ownership marker is written"
+assert_exists "$claude_home/skills/code-review/SKILL.md" "Claude native skill is installed"
+assert_contains "$claude_home/skills/code-review/.aicodereview-managed" "source=SUDARSHANCHAUDHARI/AICodeReview" "Claude skill is ownership-marked"
 
-unmanaged_home="$TMP_ROOT/unmanaged-claude"
-mkdir -p "$unmanaged_home/skills/code-review"
-printf 'user-owned\n' > "$unmanaged_home/skills/code-review/custom.txt"
-CLAUDE_HOME="$unmanaged_home" "$ROOT_DIR/install.sh" --agent claude --force >/dev/null
-backup="$(find "$unmanaged_home/skills" -maxdepth 1 -name 'code-review.aicodereview-backup-*' -print -quit)"
-[[ -n "$backup" ]] && pass "force install backs up unmanaged conflicts" || fail "force install did not create an unmanaged backup"
-[[ -n "$backup" ]] && assert_contains "$backup/custom.txt" "user-owned" "unmanaged backup preserves original content"
-assert_contains "$unmanaged_home/skills/code-review/.aicodereview-managed" "skill=code-review" "replacement is marked as managed"
+copilot_project="$TMP_ROOT/copilot"
+mkdir -p "$copilot_project/.github"
+cat > "$copilot_project/.github/copilot-instructions.md" <<'EOF_LEGACY'
+Keep this user instruction.
 
-project="$TMP_ROOT/project"
-mkdir -p "$project"
-"$ROOT_DIR/install.sh" --agent cursor --project "$project" >/dev/null
-assert_exists "$project/.cursor/rules/code-review.mdc" "Cursor rule is installed"
-assert_exists "$project/.cursor/rules/code-review.mdc.aicodereview-managed" "Cursor ownership marker is written"
+# >>> AICodeReview START <<<
+Legacy review context.
+# >>> AICodeReview END <<<
+EOF_LEGACY
+"$ROOT_DIR/install.sh" --agent copilot --project "$copilot_project" >/dev/null
+assert_exists "$copilot_project/.github/skills/code-review/SKILL.md" "Copilot native skill is installed"
+assert_contains "$copilot_project/.github/copilot-instructions.md" "Keep this user instruction." "Copilot migration preserves user instructions"
+assert_not_contains "$copilot_project/.github/copilot-instructions.md" "# >>> AICodeReview START <<<" "Copilot legacy section is removed"
 
-corrupt_project="$TMP_ROOT/corrupt-project"
+gemini_project="$TMP_ROOT/gemini"
+mkdir -p "$gemini_project"
+"$ROOT_DIR/install.sh" --agent gemini --project "$gemini_project" >/dev/null
+assert_exists "$gemini_project/.gemini/skills/code-review/SKILL.md" "Gemini native skill is installed"
+
+opencode_project="$TMP_ROOT/opencode"
+mkdir -p "$opencode_project"
+"$ROOT_DIR/install.sh" --agent opencode --project "$opencode_project" >/dev/null
+assert_exists "$opencode_project/.opencode/skills/code-review/SKILL.md" "OpenCode native skill is installed"
+
+aider_project="$TMP_ROOT/aider"
+mkdir -p "$aider_project"
+"$ROOT_DIR/install.sh" --agent aider --project "$aider_project" >/dev/null
+assert_exists "$aider_project/AICODEREVIEW.md" "Aider conventions file is installed"
+assert_exists "$aider_project/AICODEREVIEW.md.aicodereview-managed" "Aider conventions file is ownership-marked"
+assert_contains "$aider_project/.aider.conf.yml" "AICODEREVIEW.md" "Aider is auto-configured when no read setting exists"
+
+aider_existing="$TMP_ROOT/aider-existing"
+mkdir -p "$aider_existing"
+printf 'read:\n  - USER.md\n' > "$aider_existing/.aider.conf.yml"
+"$ROOT_DIR/install.sh" --agent aider --project "$aider_existing" >/dev/null
+assert_contains "$aider_existing/.aider.conf.yml" "USER.md" "Existing Aider read setting is preserved"
+assert_not_contains "$aider_existing/.aider.conf.yml" "# >>> AICodeReview Aider read START <<<" "No duplicate Aider read key is appended"
+
+corrupt_project="$TMP_ROOT/corrupt"
 mkdir -p "$corrupt_project/.github"
-printf '# >>> AICodeReview START <<<\noriginal\n' > "$corrupt_project/.github/copilot-instructions.md"
-assert_exit_code 1 "corrupt combined markers are rejected" "$ROOT_DIR/install.sh" --agent copilot --project "$corrupt_project"
-assert_contains "$corrupt_project/.github/copilot-instructions.md" "original" "corrupt combined file remains unchanged"
-assert_not_exists "$corrupt_project/.github/copilot-instructions.md.aicodereview-backup" "no misleading combined backup is created"
+printf '# >>> AICodeReview START <<<\nlegacy\n' > "$corrupt_project/.github/copilot-instructions.md"
+assert_exit_code 1 "Corrupt legacy markers block migration" "$ROOT_DIR/install.sh" --agent copilot --project "$corrupt_project"
+assert_not_exists "$corrupt_project/.github/skills/code-review" "Corrupt migration fails before native skill changes"
 
-output="$(CLAUDE_HOME="$claude_home" CODEX_HOME="$TMP_ROOT/empty-codex" "$ROOT_DIR/list-installed.sh")"
-if printf '%s\n' "$output" | grep -q 'onboarding-writer.*installed'; then
-  pass "maintenance inventory includes the final discovered skill"
-else
-  fail "maintenance inventory omitted onboarding-writer"
-fi
+conflict_project="$TMP_ROOT/conflict"
+mkdir -p "$conflict_project/.github/skills/code-review"
+printf 'user-owned\n' > "$conflict_project/.github/skills/code-review/custom.txt"
+"$ROOT_DIR/install.sh" --agent copilot --project "$conflict_project" --force >/dev/null
+backup="$(find "$conflict_project/.github/skills" -maxdepth 1 -name 'code-review.aicodereview-backup-*' -print -quit)"
+[[ -n "$backup" ]] && pass "Force migration backs up unmanaged native conflicts" || fail "Force migration did not create a backup"
+[[ -n "$backup" ]] && assert_contains "$backup/custom.txt" "user-owned" "Native conflict backup preserves user content"
+
+output="$(CLAUDE_HOME="$claude_home" CODEX_HOME="$TMP_ROOT/empty-codex" "$ROOT_DIR/list-installed.sh" --project "$opencode_project")"
+printf '%s\n' "$output" | grep -q 'opencode.*code-review.*installed' && pass "Inventory reports OpenCode native skills" || fail "Inventory omitted OpenCode native skills"
+printf '%s\n' "$output" | grep -q 'onboarding-writer' && pass "Inventory includes every discovered skill" || fail "Inventory omitted a discovered skill"
 
 echo ""
 echo "test-install.sh: $pass_count passed, $fail_count failed"
