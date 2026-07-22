@@ -19,6 +19,7 @@
 - [ ] New generated paths have ownership markers
 - [ ] `--force` backs up unmanaged conflicts
 - [ ] Migration validates markers before changing native paths
+- [ ] Multi-agent installation preflights every adapter before writing
 - [ ] Aider changes do not create a duplicate `read` key
 
 ### Validation and tests
@@ -27,6 +28,7 @@
 - [ ] `./tests/run-all.sh` passes with no failures
 - [ ] Installer changes include behavioral install and uninstall coverage
 - [ ] Migration changes include user-content preservation and corrupt-marker tests
+- [ ] Multi-agent changes include a partial-install regression test
 
 ### Documentation
 
