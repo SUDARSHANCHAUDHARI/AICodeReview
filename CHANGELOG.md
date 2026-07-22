@@ -4,28 +4,37 @@ All notable changes to AICodeReview will be documented here.
 
 ## Unreleased
 
+### Phase 0B native agent integrations
+
+- Replaced the combined GitHub Copilot instruction section with native project skills under `.github/skills/`.
+- Replaced persistent Gemini `GEMINI.md` review context with native workspace skills under `.gemini/skills/`.
+- Added native OpenCode support under `.opencode/skills/`.
+- Added a managed `AICODEREVIEW.md` conventions file for Aider.
+- Added safe Aider auto-configuration when `.aider.conf.yml` does not already contain a user-managed `read` setting.
+- Added migration from legacy Copilot, Gemini, and Aider managed sections while preserving user-owned content outside the markers.
+- Changed migration to reject corrupt legacy markers before any native skill path is modified.
+- Added update, inventory, health-check, and uninstall support for native project skill adapters.
+- Added behavioral coverage for native installs, legacy migration, conflict backups, Aider configuration, and safe uninstall.
+
 ### Phase 0A foundation hardening
 
 - Replaced duplicated hard-coded skill arrays with one dynamically discovered inventory.
-- Added ownership markers for native skill directories and Cursor rules.
+- Added ownership markers for native skill directories and generated files.
 - Changed forced installation so unmanaged conflicts are backed up instead of silently deleted.
-- Changed uninstall so unmanaged skill directories and Cursor rules are preserved.
-- Added strict validation for combined-file marker count and order before update or removal.
-- Added atomic combined-section replacement.
+- Changed uninstall so unmanaged skill directories and generated files are preserved.
+- Added strict validation for managed marker count and order before update or removal.
+- Added atomic managed-section replacement.
 - Expanded health checks to cover every discovered skill and report unmanaged or stale installs.
-- Corrected the README support matrix to distinguish native skills, Cursor rules, and persistent instruction adapters.
-- Documented the Aider `/read` or `.aider.conf.yml` activation requirement.
+- Corrected the README support matrix to distinguish native skills, Cursor rules, and Aider conventions.
 - Added Ubuntu and macOS GitHub Actions validation.
 - Added behavioral install and uninstall safety tests.
 
 ### Existing unreleased work
 
-- Restructured to multi-agent: skills renamed from `codex-*` to agent-agnostic names.
-- Added agent configs for Cursor (`.mdc`), GitHub Copilot, Gemini CLI, and Aider alongside existing Codex and Claude Code support.
-- Rewrote `install.sh` with `--agent` and `--project` flags.
-- Rewrote `uninstall.sh` to match.
+- Restructured from Codex-only workflows to agent-agnostic skills.
+- Rewrote install and uninstall commands with agent and project options.
 - Added `ios-review`, `web-review`, `changelog-writer`, `dependency-audit`, `agent-config-review`, `backend-review`, `performance-review`, `accessibility-audit`, `database-review`, `test-writer`, `kmp-review`, `docker-review`, `ci-review`, `api-design-review`, `flutter-review`, `refactor-planner`, `architecture-review`, `code-smell-detector`, `error-handling-review`, `graphql-review`, `react-native-review`, `tech-debt-audit`, and `onboarding-writer`.
-- Added maintenance scripts, test suites, project-context examples, issue templates, and contributor guidance.
+- Added maintenance scripts, project-context examples, issue templates, and contributor guidance.
 - Total skill count: 31.
 
 ## v0.1.0
