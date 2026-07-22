@@ -4,6 +4,14 @@ All notable changes to AICodeReview will be documented here.
 
 ## Unreleased
 
+### Phase 1 skill standardization
+
+- Migrate every `agents/openai.yaml` file to the official nested `interface:` structure.
+- Require quoted metadata strings, 25–64 character short descriptions, and `$skill-name` in every default prompt.
+- Add deterministic metadata generation and check mode so stale metadata fails validation.
+- Generate Cursor and Aider adapters from canonical `SKILL.md` content instead of maintaining full manual prompt copies.
+- Retain legacy Copilot and Gemini files only as migration fixtures until their removal is safe.
+
 ### Phase 0B native agent integrations
 
 - Replaced the combined GitHub Copilot instruction section with native project skills under `.github/skills/`.
