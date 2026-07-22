@@ -28,6 +28,7 @@ All notable changes to AICodeReview will be documented here.
 - Corrected the README support matrix to distinguish native skills, Cursor rules, and Aider conventions.
 - Added Ubuntu and macOS GitHub Actions validation.
 - Added behavioral install and uninstall safety tests.
+- Removed the unpublished Homebrew formula stub; distribution packaging will return with a real release and checksum.
 
 ### Existing unreleased work
 
