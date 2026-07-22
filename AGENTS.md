@@ -1,33 +1,22 @@
 # AICodeReview Agent Context
 
-AICodeReview is a portable code-review workflow pack. Every workflow has one canonical `SKILL.md`. Native agents receive that directory directly. Cursor rules, a compact Aider catalog, and OpenAI product metadata are generated from the canonical source.
+AICodeReview is a portable code-review workflow pack. Every workflow has one canonical `SKILL.md`. Native agents receive that directory directly. Cursor rules, a compact Aider catalog, and OpenAI metadata are generated from the canonical source.
 
 ## Repository structure
 
-- `skills/<name>/SKILL.md` is the workflow used by native agents and selective Aider loading.
-- `skills/<name>/agents/openai.yaml` is generated OpenAI interface metadata.
-- `src/runtime.ts` is the complete cross-platform Node CLI.
-- `bin/aicodereview.js` loads `dist/runtime.js`.
-- `tests/node-cli.test.js` and `tests/node-maintenance.test.js` cover install, uninstall, list, health, update, migration, and backup behavior.
-- Shell and Python utilities remain only for backward-compatibility testing and are not published in the npm package.
+- `skills/<name>/SKILL.md` is the only workflow source.
+- `skills/<name>/agents/openai.yaml` is generated interface metadata.
+- `src/runtime.ts` implements install, uninstall, list, health, update, validation, and generation.
+- `src/hooks.ts` installs optional Copilot and Gemini lifecycle hooks.
+- `hooks/runner.js` records deterministic Git state and must emit valid JSON only.
+- `src/eval.ts` validates fixtures and scores result files.
+- `evals/manifest.json` defines seeded defects and false-positive controls.
+- `bin/aicodereview.js` dispatches runtime, hooks, and evaluation commands.
 
 Do not add `cursor.mdc`, `copilot.md`, `gemini.md`, or `aider.md` under a skill directory. Validation rejects those duplicated adapters.
 
-## Supported integrations
-
-| Agent | Install target | Adapter |
-|---|---|---|
-| Claude Code | `~/.claude/skills/` | Native skill |
-| OpenAI Codex | `~/.codex/skills/` | Native skill |
-| GitHub Copilot | `<project>/.github/skills/` | Native skill |
-| Gemini CLI | `<project>/.gemini/skills/` | Native skill |
-| OpenCode | `<project>/.opencode/skills/` | Native skill |
-| Cursor | `<project>/.cursor/rules/` | Generated rule |
-| Aider | `<project>/AICODEREVIEW.md` and `<project>/.aicodereview/skills/` | Compact catalog plus selective skills |
-
 ## Development rules
 
-- Treat `SKILL.md` as the only workflow source.
 - Discover skills dynamically; never add hard-coded inventories.
 - Keep all published commands Node-only and cross-platform.
 - Generate metadata through `aicodereview generate --write`.
@@ -38,6 +27,13 @@ Do not add `cursor.mdc`, `copilot.md`, `gemini.md`, or `aider.md` under a skill 
 - Validate migration markers before mutation.
 - Preflight every target before an all-agent operation writes.
 - Keep the Aider catalog compact and load full workflows selectively.
+- Install hooks only for agents with documented hook formats.
+- Hooks must be optional, non-destructive, and explicit about what they do.
+- Hook stdout must contain only the protocol JSON expected by the host.
+- Hook reports are deterministic repository evidence, not AI review results.
+- Evaluation fixtures must contain fake or synthetic data only.
+- Include at least one false-positive control in every evaluation category.
+- Do not advertise behavioral support without reproducible evaluation results.
 - Keep review and audit workflows read-only unless the user explicitly requests changes.
 - Never commit secrets, signing material, private customer data, or `.env` values.
 
@@ -50,11 +46,11 @@ npm run validate
 npm run pack:check
 ```
 
-GitHub Actions must cover Ubuntu, macOS, and Windows. Legacy shell compatibility is tested separately on Ubuntu and macOS.
+GitHub Actions must cover Ubuntu, macOS, and Windows. Repository-only shell compatibility is checked separately on Ubuntu and macOS.
 
-## Current phases
+## Completed phases
 
-- Phase 0: safe installation, migration, native multi-agent support, and CI.
+- Phase 0: safe ownership, migration, native multi-agent support, and CI configuration.
 - Phase 1: canonical workflows, metadata generation, Cursor rules, and selective Aider loading.
 - Phase 2: complete cross-platform Node CLI, maintenance commands, and package validation.
-- Phase 3: optional lifecycle hooks and behavioral evaluation fixtures.
+- Phase 3: optional documented hooks and reproducible behavioral evaluation fixtures.
