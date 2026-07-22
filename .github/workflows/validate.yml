@@ -4,12 +4,34 @@ on:
   push:
     branches: ["**"]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  validate:
+  node-cli:
+    name: Node CLI (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install build dependencies
+        run: npm install
+      - name: Build and test cross-platform CLI
+        run: npm test
+      - name: Verify package contents
+        run: npm pack --dry-run
+
+  shell-compatibility:
+    name: Shell compatibility (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -20,5 +42,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate repository
         run: bash scripts/validate.sh
-      - name: Run tests
+      - name: Run shell compatibility tests
         run: bash tests/run-all.sh
