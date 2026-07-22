@@ -128,37 +128,35 @@ def render_cursor(root: Path, name: str) -> str:
     )
 
 
-def strip_h1(body: str) -> str:
-    lines = body.splitlines()
-    if lines and lines[0].startswith("# "):
-        lines = lines[1:]
-        while lines and not lines[0].strip():
-            lines = lines[1:]
-    return "\n".join(lines).strip()
-
-
-def demote_headings(body: str) -> str:
-    lines = []
-    for line in body.splitlines():
-        match = re.match(r"^(#{1,5})(\s+.*)$", line)
-        if match:
-            line = "#{0}{1}".format(match.group(1), match.group(2))
-        lines.append(line)
-    return "\n".join(lines)
-
-
 def render_aider(root: Path, names: List[str]) -> str:
     parts = [
         "# AICodeReview",
         "",
-        "Generated from canonical `SKILL.md` files. This file is managed by AICodeReview.",
+        "Compact workflow catalog generated from canonical `SKILL.md` files.",
         "",
-        "Apply only the workflow requested by the user. Review and audit workflows remain read-only unless the user explicitly asks for changes.",
+        "## Activate a workflow",
+        "",
+        "Load only the workflow needed for the current task:",
+        "",
+        "`/read .aicodereview/skills/<skill-name>/SKILL.md`",
+        "",
+        "Example:",
+        "",
+        "`/read .aicodereview/skills/code-review/SKILL.md`",
+        "",
+        "Then ask Aider to use that workflow by name.",
+        "",
+        "## Shared rules",
+        "",
+        "- Inspect repository state and relevant files before making claims.",
+        "- Keep review and audit workflows read-only unless the user explicitly requests changes.",
+        "- Preserve secrets, signing material, private data, and user-owned configuration.",
+        "",
+        "## Available workflows",
     ]
     for name in names:
-        description, body = parse_skill(root, name)
-        nested_body = demote_headings(strip_h1(body))
-        parts.extend(["", "## {0}".format(display_name(name)), "", description, "", nested_body])
+        description, _body = parse_skill(root, name)
+        parts.append("- `{0}`: {1}".format(name, description))
     return "\n".join(parts).rstrip() + "\n"
 
 
