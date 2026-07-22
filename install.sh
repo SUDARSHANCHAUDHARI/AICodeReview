@@ -30,7 +30,7 @@ Agents:
   copilot   Install native project skills to <project>/.github/skills/
   gemini    Install native project skills to <project>/.gemini/skills/
   opencode  Install native project skills to <project>/.opencode/skills/
-  aider     Generate <project>/AICODEREVIEW.md and configure it when safe
+  aider     Install a compact catalog plus selective skills in <project>/.aicodereview/skills/
   all       Install every current adapter (requires --project)
 
 Options:
@@ -42,7 +42,7 @@ Options:
 
 Canonical source:
   SKILL.md is the only workflow source. OpenAI metadata, Cursor rules, and
-  Aider conventions are generated deterministically from it.
+  the Aider catalog are generated deterministically from it.
 
 Migration:
   Managed legacy Copilot, Gemini, and Aider sections are removed only after
@@ -240,7 +240,7 @@ configure_aider_read() {
       echo "Aider config already references AICODEREVIEW.md."
     else
       echo "Aider config has an existing read setting; it was left unchanged."
-      echo "Add AICODEREVIEW.md to that read list to load the generated conventions."
+      echo "Add AICODEREVIEW.md to that read list to load the compact workflow catalog."
     fi
     return 0
   fi
@@ -265,7 +265,8 @@ EOF_SECTION
 
 preflight_aider() {
   local legacy_file="$project_dir/CONVENTIONS.md"
-  local dest="$project_dir/AICODEREVIEW.md"
+  local catalog="$project_dir/AICODEREVIEW.md"
+  local skills_base="$project_dir/.aicodereview/skills"
   local legacy_state config_state
 
   validate_artifact_source
@@ -282,23 +283,26 @@ preflight_aider() {
     return 1
   }
 
-  preflight_managed_file_install "$dest" "Aider conventions" "$force"
+  preflight_skill_directory_install "$skills_base" "aider" "$force"
+  preflight_managed_file_install "$catalog" "Aider workflow catalog" "$force"
 }
 
 install_aider() {
   local legacy_file="$project_dir/CONVENTIONS.md"
-  local dest="$project_dir/AICODEREVIEW.md"
+  local catalog="$project_dir/AICODEREVIEW.md"
+  local skills_base="$project_dir/.aicodereview/skills"
   local generated
 
   preflight_aider
   generated="$(mktemp "${TMPDIR:-/tmp}/aicodereview-aider.XXXXXX")"
   python3 "$ARTIFACT_SCRIPT" render-aider --output "$generated"
 
+  install_native_agent "$skills_base" "aider"
   install_managed_file \
     "$generated" \
-    "$dest" \
-    "aider-conventions" \
-    "Aider conventions" \
+    "$catalog" \
+    "aider-catalog" \
+    "Aider workflow catalog" \
     "$force" \
     "$dry_run"
   rm -f "$generated"
@@ -398,5 +402,8 @@ else
   echo "Done."
   if [[ "$agent" == "gemini" || "$agent" == "all" ]]; then
     echo "Gemini CLI: run /skills reload to refresh workspace skills."
+  fi
+  if [[ "$agent" == "aider" || "$agent" == "all" ]]; then
+    echo "Aider: load a workflow with /read .aicodereview/skills/<skill-name>/SKILL.md."
   fi
 fi
