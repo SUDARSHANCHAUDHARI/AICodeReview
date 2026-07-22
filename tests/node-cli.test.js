@@ -1,8 +1,8 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { execFileSync, spawnSync } = require('node:child_process');
-const { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } = require('node:fs');
+const { spawnSync } = require('node:child_process');
+const { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const { join, resolve } = require('node:path');
 const test = require('node:test');
@@ -70,29 +70,49 @@ test('force backs up unmanaged native conflicts', () => {
   runOk(['install', '--agent', 'copilot', '--project', project, '--force']);
 
   const parent = join(project, '.github', 'skills');
-  const backup = require('node:fs').readdirSync(parent).find((name) => name.startsWith('code-review.aicodereview-backup-'));
+  const backup = readdirSync(parent).find((name) => name.startsWith('code-review.aicodereview-backup-'));
   assert.ok(backup);
   assert.equal(readFileSync(join(parent, backup, 'custom.txt'), 'utf8'), 'user-owned\n');
 });
 
-test('legacy migration preserves user-owned content', () => {
+test('force backs up an orphan unmanaged file marker', () => {
+  const root = sandbox();
+  const project = join(root, 'project');
+  const rules = join(project, '.cursor', 'rules');
+  const marker = join(rules, 'code-review.mdc.aicodereview-managed');
+  mkdirSync(rules, { recursive: true });
+  writeFileSync(marker, 'user-owned marker\n');
+
+  runOk(['install', '--agent', 'cursor', '--project', project, '--force']);
+
+  const backup = readdirSync(rules).find((name) => name.startsWith('code-review.mdc.aicodereview-managed.aicodereview-backup-'));
+  assert.ok(backup);
+  assert.equal(readFileSync(join(rules, backup), 'utf8'), 'user-owned marker\n');
+  assert.ok(existsSync(join(rules, 'code-review.mdc')));
+});
+
+test('legacy migration preserves user-owned content and outer whitespace', () => {
   const root = sandbox();
   const project = join(root, 'project');
   const instructions = join(project, '.github', 'copilot-instructions.md');
   mkdirSync(join(project, '.github'), { recursive: true });
   writeFileSync(instructions, [
-    'Keep this user instruction.',
+    '',
+    '  Keep this user instruction.  ',
     '',
     '# >>> AICodeReview START <<<',
     'Legacy review context.',
     '# >>> AICodeReview END <<<',
+    '',
+    '  Keep this trailing instruction.  ',
     '',
   ].join('\n'));
 
   runOk(['install', '--agent', 'copilot', '--project', project]);
 
   const result = readFileSync(instructions, 'utf8');
-  assert.match(result, /Keep this user instruction/);
+  assert.ok(result.startsWith('\n  Keep this user instruction.  '));
+  assert.ok(result.endsWith('  Keep this trailing instruction.  \n'));
   assert.doesNotMatch(result, /AICodeReview START/);
 });
 
@@ -113,6 +133,18 @@ test('all-agent preflight prevents partial global installation', () => {
   assert.ok(!existsSync(join(claude, 'skills', 'code-review')));
   assert.ok(!existsSync(join(codex, 'skills', 'code-review')));
   assert.ok(!existsSync(join(project, '.cursor', 'rules', 'code-review.mdc')));
+});
+
+test('uninstall removes an orphan managed file marker', () => {
+  const root = sandbox();
+  const project = join(root, 'project');
+  const marker = join(project, '.cursor', 'rules', 'code-review.mdc.aicodereview-managed');
+  mkdirSync(join(project, '.cursor', 'rules'), { recursive: true });
+  writeFileSync(marker, 'source=SUDARSHANCHAUDHARI/AICodeReview\nitem=cursor-rule:code-review\n');
+
+  runOk(['uninstall', '--agent', 'cursor', '--project', project]);
+
+  assert.ok(!existsSync(marker));
 });
 
 test('uninstall removes only ownership-marked content', () => {
