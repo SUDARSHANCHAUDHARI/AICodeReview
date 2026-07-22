@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Generate AICodeReview artifacts from canonical SKILL.md files."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 ROOT = Path(__file__).resolve().parents[1]
 OBSOLETE = ("cursor.mdc", "copilot.md", "gemini.md", "aider.md")
+SKILL_NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 DISPLAY_OVERRIDES = {
     "api-design-review": "API Design Review",
     "ci-review": "CI Review",
@@ -30,11 +31,11 @@ class ArtifactError(RuntimeError):
 
 def atomic_write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent, text=True)
+    fd, temp = tempfile.mkstemp(prefix=".{0}.".format(path.name), dir=str(path.parent), text=True)
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(content)
-        os.replace(temp, path)
+        os.replace(temp, str(path))
     except Exception:
         try:
             os.unlink(temp)
@@ -43,41 +44,52 @@ def atomic_write(path: Path, content: str) -> None:
         raise
 
 
-def skill_names(root: Path) -> list[str]:
-    names = sorted(path.name for path in (root / "skills").iterdir() if path.is_dir())
+def skill_names(root: Path) -> List[str]:
+    skills_root = root / "skills"
+    if not skills_root.is_dir():
+        raise ArtifactError("missing skills directory: {0}".format(skills_root))
+
+    names = sorted(path.name for path in skills_root.iterdir() if path.is_dir())
     if not names:
         raise ArtifactError("no skill directories found")
     return names
 
 
-def parse_skill(root: Path, name: str) -> tuple[str, str]:
+def parse_skill(root: Path, name: str) -> Tuple[str, str]:
+    if not SKILL_NAME_PATTERN.fullmatch(name):
+        raise ArtifactError("invalid skill directory name: {0}".format(name))
+
     path = root / "skills" / name / "SKILL.md"
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except FileNotFoundError as exc:
-        raise ArtifactError(f"missing {path}") from exc
+        raise ArtifactError("missing {0}".format(path)) from exc
 
     if not lines or lines[0] != "---":
-        raise ArtifactError(f"{path} must start with YAML frontmatter")
+        raise ArtifactError("{0} must start with YAML frontmatter".format(path))
     try:
         end = lines.index("---", 1)
     except ValueError as exc:
-        raise ArtifactError(f"{path} has no closing frontmatter fence") from exc
+        raise ArtifactError("{0} has no closing frontmatter fence".format(path)) from exc
 
-    frontmatter: dict[str, str] = {}
+    frontmatter: Dict[str, str] = {}
     for line in lines[1:end]:
         key, separator, value = line.partition(":")
         if separator:
             frontmatter[key.strip()] = value.strip().strip("\"'")
+
     if frontmatter.get("name") != name:
-        raise ArtifactError(f"{path} name must match directory {name}")
+        raise ArtifactError("{0} name must match directory {1}".format(path, name))
+
     description = frontmatter.get("description", "")
     if not description:
-        raise ArtifactError(f"{path} has an empty description")
+        raise ArtifactError("{0} has an empty description".format(path))
+    if len(description) > 1024:
+        raise ArtifactError("{0} description exceeds 1,024 characters".format(path))
 
     body = "\n".join(lines[end + 1 :]).strip()
     if not body:
-        raise ArtifactError(f"{path} has an empty body")
+        raise ArtifactError("{0} has an empty body".format(path))
     return description, body
 
 
@@ -85,23 +97,22 @@ def display_name(name: str) -> str:
     return DISPLAY_OVERRIDES.get(name, " ".join(part.capitalize() for part in name.split("-")))
 
 
-def interface_values(name: str) -> tuple[str, str, str]:
+def interface_values(name: str) -> Tuple[str, str, str]:
     display = display_name(name)
-    short = f"Run the {display} workflow"
-    prompt = f"Use ${name} to apply this workflow to the current repository."
+    short = "Run the {0} workflow".format(display)
+    prompt = "Use ${0} to apply this workflow to the current repository.".format(name)
     if not 25 <= len(short) <= 64:
-        raise ArtifactError(f"{name}: generated short description has invalid length")
+        raise ArtifactError("{0}: generated short description has invalid length".format(name))
     return display, short, prompt
 
 
 def render_openai(name: str) -> str:
     display, short, prompt = interface_values(name)
-    quote = lambda value: json.dumps(value, ensure_ascii=False)
     return (
         "interface:\n"
-        f"  display_name: {quote(display)}\n"
-        f"  short_description: {quote(short)}\n"
-        f"  default_prompt: {quote(prompt)}\n"
+        "  display_name: {0}\n".format(json.dumps(display, ensure_ascii=False))
+        + "  short_description: {0}\n".format(json.dumps(short, ensure_ascii=False))
+        + "  default_prompt: {0}\n".format(json.dumps(prompt, ensure_ascii=False))
     )
 
 
@@ -109,11 +120,11 @@ def render_cursor(root: Path, name: str) -> str:
     description, body = parse_skill(root, name)
     return (
         "---\n"
-        f"description: {json.dumps(description, ensure_ascii=False)}\n"
-        "globs: []\n"
-        "alwaysApply: false\n"
-        "---\n\n"
-        f"{body.rstrip()}\n"
+        "description: {0}\n".format(json.dumps(description, ensure_ascii=False))
+        + "globs: []\n"
+        + "alwaysApply: false\n"
+        + "---\n\n"
+        + "{0}\n".format(body.rstrip())
     )
 
 
@@ -126,7 +137,7 @@ def strip_h1(body: str) -> str:
     return "\n".join(lines).strip()
 
 
-def render_aider(root: Path, names: list[str]) -> str:
+def render_aider(root: Path, names: List[str]) -> str:
     parts = [
         "# AICodeReview",
         "",
@@ -136,11 +147,11 @@ def render_aider(root: Path, names: list[str]) -> str:
     ]
     for name in names:
         description, body = parse_skill(root, name)
-        parts.extend(["", f"## {display_name(name)}", "", description, "", strip_h1(body)])
+        parts.extend(["", "## {0}".format(display_name(name)), "", description, "", strip_h1(body)])
     return "\n".join(parts).rstrip() + "\n"
 
 
-def validate(root: Path, reject_obsolete: bool = True) -> list[str]:
+def validate(root: Path, reject_obsolete: bool = True) -> List[str]:
     names = skill_names(root)
     for name in names:
         parse_skill(root, name)
@@ -149,13 +160,13 @@ def validate(root: Path, reject_obsolete: bool = True) -> list[str]:
             for filename in OBSOLETE:
                 path = root / "skills" / name / "agents" / filename
                 if path.exists():
-                    raise ArtifactError(f"obsolete generated adapter remains: {path.relative_to(root)}")
+                    raise ArtifactError("obsolete generated adapter remains: {0}".format(path.relative_to(root)))
     return names
 
 
 def sync_openai(root: Path, write: bool) -> int:
     names = validate(root, reject_obsolete=False)
-    stale: list[Path] = []
+    stale: List[Path] = []
     for name in names:
         target = root / "skills" / name / "agents" / "openai.yaml"
         expected = render_openai(name)
@@ -164,15 +175,18 @@ def sync_openai(root: Path, write: bool) -> int:
             stale.append(target)
             if write:
                 atomic_write(target, expected)
+
     if stale and not write:
         for path in stale:
-            print(f"STALE: {path.relative_to(root)}", file=sys.stderr)
+            print("STALE: {0}".format(path.relative_to(root)), file=sys.stderr)
         return 1
-    print(f"{'Updated' if write else 'Verified'} OpenAI metadata for {len(names)} skills.")
+
+    action = "Updated" if write else "Verified"
+    print("{0} OpenAI metadata for {1} skills.".format(action, len(names)))
     return 0
 
 
-def write_output(content: str, output: str | None) -> None:
+def write_output(content: str, output: Optional[str]) -> None:
     if output:
         atomic_write(Path(output), content)
     else:
@@ -204,21 +218,22 @@ def main() -> int:
     try:
         if args.command == "sync-openai":
             return sync_openai(root, args.write)
+
         names = validate(root)
         if args.command == "validate":
-            print(f"Validated {len(names)} canonical skills.")
+            print("Validated {0} canonical skills.".format(len(names)))
             return 0
         if args.command == "render-cursor":
             if args.skill not in names:
-                raise ArtifactError(f"unknown skill: {args.skill}")
+                raise ArtifactError("unknown skill: {0}".format(args.skill))
             write_output(render_cursor(root, args.skill), args.output)
             return 0
         if args.command == "render-aider":
             write_output(render_aider(root, names), args.output)
             return 0
-        raise ArtifactError(f"unsupported command: {args.command}")
+        raise ArtifactError("unsupported command: {0}".format(args.command))
     except ArtifactError as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+        print("ERROR: {0}".format(exc), file=sys.stderr)
         return 1
 
 
