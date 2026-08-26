@@ -4,27 +4,44 @@ All notable changes to AICodeReview will be documented here.
 
 ## Unreleased
 
-- Restructured to multi-agent: skills renamed from `codex-*` to agent-agnostic names.
-- Added agent configs for Cursor (`.mdc`), GitHub Copilot, Gemini CLI, and Aider alongside existing Codex and Claude Code support.
-- Rewrote `install.sh` with `--agent` and `--project` flags to support all six agents.
-- Rewrote `uninstall.sh` to match.
-- Updated `validate.sh` to check all five agent config files per skill.
-- Updated README, USAGE, and CUSTOMISING docs to reflect multi-agent support.
-- Added `ios-review`, `web-review`, `changelog-writer`, `dependency-audit`, `agent-config-review` skills.
-- Added `backend-review`, `performance-review`, `accessibility-audit`, `database-review`, `test-writer`, `kmp-review`, `docker-review`, `ci-review`, `api-design-review`, `flutter-review`, `refactor-planner` skills.
-- Total skill count: 24.
-- Added `architecture-review`, `code-smell-detector`, `error-handling-review`, `graphql-review`, `react-native-review`, `tech-debt-audit`, `onboarding-writer` skills.
-- Added `update.sh`, `list-installed.sh`, `check-health.sh` maintenance scripts.
-- Added `tests/` directory with bash test suite (`run-all.sh`, `test-install.sh`, `test-validate.sh`).
-- Added 4 new example context files: Python/Django, Go API, React Native, iOS/Swift.
-- Added GitHub community files: issue templates (bug, skill request) and PR template.
-- Added `SKILL_GUIDE.md` — contributor guide for writing new skills.
-- Added Homebrew formula stub (`Formula/aicodereview.rb`) and npm package stub (`package.json`).
+### Phase 0B native agent integrations
+
+- Replaced the combined GitHub Copilot instruction section with native project skills under `.github/skills/`.
+- Replaced persistent Gemini `GEMINI.md` review context with native workspace skills under `.gemini/skills/`.
+- Added native OpenCode support under `.opencode/skills/`.
+- Added a managed `AICODEREVIEW.md` conventions file for Aider.
+- Added safe Aider auto-configuration when `.aider.conf.yml` does not already contain a user-managed `read` setting.
+- Added migration from legacy Copilot, Gemini, and Aider managed sections while preserving user-owned content outside the markers.
+- Changed migration to reject corrupt legacy markers before any native skill path is modified.
+- Added an all-agent preflight gate so a late conflict or corrupt migration cannot leave a partial installation.
+- Added update, inventory, health-check, and uninstall support for native project skill adapters.
+- Added behavioral coverage for native installs, legacy migration, conflict backups, Aider configuration, all-agent preflight, and safe uninstall.
+
+### Phase 0A foundation hardening
+
+- Replaced duplicated hard-coded skill arrays with one dynamically discovered inventory.
+- Added ownership markers for native skill directories and generated files.
+- Changed forced installation so unmanaged conflicts are backed up instead of silently deleted.
+- Changed uninstall so unmanaged skill directories and generated files are preserved.
+- Added strict validation for managed marker count and order before update or removal.
+- Added atomic managed-section replacement.
+- Expanded health checks to cover every discovered skill and report unmanaged or stale installs.
+- Corrected the README support matrix to distinguish native skills, Cursor rules, and Aider conventions.
+- Added Ubuntu and macOS GitHub Actions validation.
+- Added behavioral install and uninstall safety tests.
+- Removed the unpublished Homebrew formula stub; distribution packaging will return with a real release and checksum.
+
+### Existing unreleased work
+
+- Restructured from Codex-only workflows to agent-agnostic skills.
+- Rewrote install and uninstall commands with agent and project options.
+- Added `ios-review`, `web-review`, `changelog-writer`, `dependency-audit`, `agent-config-review`, `backend-review`, `performance-review`, `accessibility-audit`, `database-review`, `test-writer`, `kmp-review`, `docker-review`, `ci-review`, `api-design-review`, `flutter-review`, `refactor-planner`, `architecture-review`, `code-smell-detector`, `error-handling-review`, `graphql-review`, `react-native-review`, `tech-debt-audit`, and `onboarding-writer`.
+- Added maintenance scripts, project-context examples, issue templates, and contributor guidance.
 - Total skill count: 31.
 
 ## v0.1.0
 
 - Initial skill pack scaffold.
-- Added review, security audit, explanation, fixer, Android, release, PR summary, and context writer skills.
+- Added review, security audit, explanation, fixer, Android, release, pull request summary, and context-writer skills.
 - Added project context templates and examples.
 - Added local validation script.

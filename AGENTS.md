@@ -1,81 +1,68 @@
-# AICodeReview — Agent Context
+# AICodeReview Agent Context
 
-This repo is a skill pack for AI coding agents. It provides code review, security audit, and project utility workflows that work across Claude Code, OpenAI Codex, Cursor, GitHub Copilot, Gemini CLI, and Aider.
+AICodeReview is a portable code-review workflow pack. Each workflow has a canonical `SKILL.md` that is installed natively for agents supporting the Agent Skills model. Cursor and Aider use generated adapters.
 
-## What This Repo Contains
+## Repository structure
 
-- `skills/` — one folder per skill. Each folder has a `SKILL.md` (shared prompt) and `agents/` configs for each supported agent.
-- `install.sh` — installs skills to the correct location for each agent.
-- `uninstall.sh` — removes installed skills cleanly, preserving existing content.
-- `scripts/validate.sh` — validates all skills have required files and are wired into the installer.
-- `templates/PROJECT_CONTEXT.md` — template users copy into their own repos to give AI agents repo-specific context.
-- `examples/` — filled-in examples of `PROJECT_CONTEXT.md` for Android and web projects.
-- `docs/` — usage and customisation guides.
+- `skills/` contains one canonical skill directory per workflow.
+- `skills/<name>/SKILL.md` is the native workflow used by Claude Code, Codex, GitHub Copilot, Gemini CLI, and OpenCode.
+- `skills/<name>/agents/openai.yaml` contains Codex-facing metadata pending Phase 1 standardization.
+- `skills/<name>/agents/cursor.mdc` is the Cursor rule adapter.
+- `skills/<name>/agents/aider.md` contributes to the generated Aider conventions file.
+- `aicodereview-lib.sh` contains shared ownership, backup, migration, and inventory helpers.
+- `install.sh`, `uninstall.sh`, `update.sh`, `list-installed.sh`, and `check-health.sh` manage integrations.
+- `templates/PROJECT_CONTEXT.md` provides repository-specific review context.
+- `examples/` contains example project context files.
 
-## Skills
+## Supported integrations
 
-| Skill | Purpose |
-|---|---|
-| `code-review` | Review code changes for bugs, security, performance, and missing tests |
-| `security-audit` | Threat-model driven security and privacy audit |
-| `codebase-explainer` | Explain repo architecture, modules, and data flow |
-| `review-fixer` | Apply safe, concrete fixes from review findings |
-| `android-review` | Android/Kotlin/KMP/Compose-specific review |
-| `ios-review` | iOS/macOS Swift/SwiftUI-specific review |
-| `web-review` | React/Next.js/TypeScript-specific review |
-| `release-review` | Release readiness check before shipping |
-| `pr-summary` | Write concise PR descriptions from local changes |
-| `context-writer` | Create or update `PROJECT_CONTEXT.md` for a repo |
-| `changelog-writer` | Generate CHANGELOG entries from git commits |
-| `dependency-audit` | Check for outdated, vulnerable, or risky dependencies |
-| `agent-config-review` | Review AI agent config files for quality and security |
-| `backend-review` | REST/GraphQL API, DB queries, auth, error handling, service-layer review |
-| `performance-review` | Latency, memory, N+1, caching, and rendering bottleneck review |
-| `accessibility-audit` | WCAG 2.1 AA audit: semantics, keyboard, ARIA, contrast, mobile |
-| `database-review` | Schema, migrations, indexes, query efficiency, and data integrity |
-| `test-writer` | Write unit, integration, and snapshot tests matching existing test style |
-| `kmp-review` | Kotlin Multiplatform: expect/actual, shared logic, platform-specific code |
-| `docker-review` | Dockerfile and Compose: layers, secrets, base images, health checks |
-| `ci-review` | CI/CD pipeline: secrets, caching, test gating, failure modes |
-| `api-design-review` | API contract: naming, versioning, auth, error shapes, idempotency |
-| `flutter-review` | Flutter/Dart: widget lifecycle, build perf, platform channels, release |
-| `refactor-planner` | Plan safe incremental refactors with blast radius and rollback steps |
-| `architecture-review` | Dependency direction, circular deps, god modules, coupling, layer violations |
-| `code-smell-detector` | God classes, long methods, feature envy, dead code, magic numbers |
-| `error-handling-review` | Silent catches, missing UI errors, retry without backoff, untyped errors |
-| `graphql-review` | Schema design, resolver N+1, field-level auth, depth limits, breaking changes |
-| `react-native-review` | JS thread, bridge usage, FlatList, memory leaks, CodePush, deep link security |
-| `tech-debt-audit` | TODO/FIXME scan, deprecated APIs, untested critical paths, dead feature flags |
-| `onboarding-writer` | Generate ONBOARDING.md from real repo inspection |
+| Agent | Install target | Adapter |
+|---|---|---|
+| Claude Code | `~/.claude/skills/` | Native skill |
+| OpenAI Codex | `~/.codex/skills/` | Native skill |
+| GitHub Copilot | `<project>/.github/skills/` | Native skill |
+| Gemini CLI | `<project>/.gemini/skills/` | Native skill |
+| OpenCode | `<project>/.opencode/skills/` | Native skill |
+| Cursor | `<project>/.cursor/rules/` | Generated `.mdc` rule |
+| Aider | `<project>/AICODEREVIEW.md` | Generated conventions file |
 
-## Supported Agents
+Copilot and Gemini legacy managed sections are migration inputs only. Do not add new review workflows to `.github/copilot-instructions.md` or `GEMINI.md`.
 
-| Agent | Install target |
-|---|---|
-| Claude Code | `~/.claude/skills/` |
-| OpenAI Codex | `~/.codex/skills/` |
-| Cursor | `<project>/.cursor/rules/` |
-| GitHub Copilot | `<project>/.github/copilot-instructions.md` |
-| Gemini CLI | `<project>/GEMINI.md` |
-| Aider | `<project>/CONVENTIONS.md` |
+## Development rules
 
-## Install
+- Treat `SKILL.md` as the canonical workflow.
+- Discover skills dynamically from directories under `skills/`; do not add hard-coded skill arrays.
+- Preserve user-owned files and configuration.
+- Replace or remove only paths carrying an AICodeReview ownership marker.
+- `--force` must back up unmanaged conflicts before replacement.
+- Validate legacy section markers before migration and stop before mutation when markers are corrupt.
+- Preflight all adapters before an all-agent operation writes the first file.
+- Do not create a duplicate top-level `read` key in `.aider.conf.yml`.
+- Keep review and audit skills read-only unless the user explicitly requests changes.
+- Never commit credentials, signing material, private customer data, or `.env` values.
 
-```bash
-./install.sh                                          # claude + codex (default)
-./install.sh --agent all --project /path/to/project  # all agents
-```
-
-## Validate
+## Validation
 
 ```bash
 ./scripts/validate.sh
+./tests/run-all.sh
 ```
 
-## Conventions
+Installer changes require behavioral coverage for new installs, managed updates, unmanaged conflicts, migration, partial-install prevention, dry runs, and uninstall ownership.
 
-- Each skill must have `SKILL.md` with valid YAML frontmatter (`name`, `description`).
-- Each skill must have all five agent files: `openai.yaml`, `cursor.mdc`, `copilot.md`, `gemini.md`, `aider.md`.
-- Every new skill must be added to the `skills` array in `install.sh` and `uninstall.sh`.
-- Never commit secrets, signing material, `.env` values, or private customer data.
-- Run `./scripts/validate.sh` before opening a PR.
+## Installation examples
+
+```bash
+./install.sh
+./install.sh --agent copilot --project /path/to/project
+./install.sh --agent gemini --project /path/to/project
+./install.sh --agent opencode --project /path/to/project
+./install.sh --agent all --project /path/to/project
+```
+
+## Current phases
+
+- Phase 0: safe inventory, installation, migration, native multi-agent support, and CI.
+- Phase 1: metadata standardization and generated adapter consistency.
+- Phase 2: cross-platform TypeScript CLI and Windows support.
+- Phase 3: optional hooks and behavioral evaluation repositories.

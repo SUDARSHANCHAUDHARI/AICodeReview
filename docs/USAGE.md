@@ -7,154 +7,169 @@ git clone https://github.com/SUDARSHANCHAUDHARI/AICodeReview.git
 cd AICodeReview
 ```
 
-**Claude Code + Codex (default):**
+Install Claude Code and Codex globally:
 
 ```bash
 ./install.sh
 ```
 
-**Single agent:**
+Install a single global agent:
 
 ```bash
 ./install.sh --agent claude
 ./install.sh --agent codex
 ```
 
-**Project-local agents:**
+Install project-scoped integrations:
 
 ```bash
-./install.sh --agent cursor  --project /path/to/your/project
-./install.sh --agent copilot --project /path/to/your/project
-./install.sh --agent gemini  --project /path/to/your/project
-./install.sh --agent aider   --project /path/to/your/project
+./install.sh --agent cursor   --project /path/to/project
+./install.sh --agent copilot  --project /path/to/project
+./install.sh --agent gemini   --project /path/to/project
+./install.sh --agent opencode --project /path/to/project
+./install.sh --agent aider    --project /path/to/project
 ```
 
-Preview without writing files:
+Install everything:
 
 ```bash
-./install.sh --dry-run
-./install.sh --agent cursor --project /path/to/project --dry-run
+./install.sh --agent all --project /path/to/project
 ```
 
-Overwrite existing installed skills:
+The all-agent command validates every destination and legacy migration marker before writing any files.
+
+Preview changes:
 
 ```bash
-./install.sh --force
+./install.sh --agent all --project /path/to/project --dry-run
 ```
 
-## First Time In A Repo
+Update managed installs or migrate legacy adapters:
 
-1. Copy `templates/PROJECT_CONTEXT.md` into the target repo.
-2. Fill in the real stack, conventions, commands, and risk areas.
-3. Ask your AI agent to review or explain the repo using the installed skills.
+```bash
+./install.sh --agent copilot --project /path/to/project --force
+./update.sh --project /path/to/project
+```
 
-Example:
+`--force` backs up an unmanaged conflicting path before replacement.
+
+## First use in a repository
+
+1. Copy `templates/PROJECT_CONTEXT.md` into the target repository.
+2. Fill in the actual stack, architecture, commands, conventions, and risk areas.
+3. Ask the agent to use the relevant review workflow.
 
 ```text
-Use codebase-explainer to study this repo and help me fill PROJECT_CONTEXT.md.
+Use codebase-explainer to study this repository and help me complete PROJECT_CONTEXT.md.
 ```
 
-## Before Committing
+## Common workflows
+
+Before committing:
 
 ```text
 Use code-review to review my current changes.
 ```
 
-For Android/KMP work:
-
-```text
-Use code-review and focus on Compose state, ViewModel state flow, coroutine usage, Gradle config, and missing tests.
-```
-
-Or use the Android-specific skill:
+For Android or Kotlin work:
 
 ```text
 Use android-review to review my current Android changes.
 ```
 
-## Before Releasing
+Before releasing:
 
 ```text
 Use security-audit and focus on release-blocking risks.
-```
-
-For Android releases:
-
-```text
-Use security-audit and check for secrets, signing material, exported components, WebView risk, cleartext traffic, and sensitive logging.
-```
-
-For release readiness:
-
-```text
 Use release-review to check whether this build is ready to ship.
 ```
 
-## Fixing Findings
+Fixing findings:
 
 ```text
 Use review-fixer to fix only concrete and low-risk findings from the last review.
 ```
 
-## Writing PR Notes
+Writing pull request notes:
 
 ```text
-Use pr-summary to write a PR description for my current changes.
+Use pr-summary to write a pull request description for my current changes.
 ```
 
-## Writing Project Context
+Writing project context:
 
 ```text
-Use context-writer to create PROJECT_CONTEXT.md for this repo.
+Use context-writer to create PROJECT_CONTEXT.md for this repository.
 ```
 
-## Good Review Inputs
+## Good review inputs
 
-The best reviews include:
-
-- A clean git diff.
+- A focused Git diff.
 - A current `PROJECT_CONTEXT.md`.
-- Known test/build commands.
-- Clear release target, when relevant.
+- Known verification commands.
+- The intended release or deployment target.
+- Relevant logs or failure details.
 
-## What Not To Put In Context
+Do not put secrets, signing material, customer data, or private tokens into context files.
 
-- Secrets or `.env` values.
-- Signing keys or keystore passwords.
-- Private customer data.
-- Private API tokens.
+## Agent-specific behavior
 
-## Suggested Workflow
+### Claude Code
 
-1. Keep `PROJECT_CONTEXT.md` current in each important repo.
-2. Run `code-review` before commits or PRs.
-3. Run `security-audit` before release branches or production deploys.
-4. Use `review-fixer` only after reading the findings.
-5. Run your normal project tests/builds after fixes.
-6. Use `pr-summary` when you are ready to open a PR.
+Native skills are installed under `~/.claude/skills/`.
 
-## Agent-Specific Notes
+### OpenAI Codex
 
-### Claude Code / Codex
-
-Skills are installed globally and triggered by name:
-
-```text
-Use code-review to review my current changes.
-```
-
-### Cursor
-
-Rules are installed per-project into `.cursor/rules/`. Cursor picks them up automatically based on context. You can also invoke them directly in your prompt.
+Native skills are installed under `~/.codex/skills/`.
 
 ### GitHub Copilot
 
-Instructions are written to `.github/copilot-instructions.md`. Copilot reads this file in supported editors automatically.
+Native project skills are installed under `.github/skills/`. Older managed content in `.github/copilot-instructions.md` is removed during migration while user-owned instructions are preserved.
 
 ### Gemini CLI
 
-Instructions are written to `GEMINI.md` in your project root. Gemini CLI reads this file when present.
+Native workspace skills are installed under `.gemini/skills/`. Run `/skills reload` after installation. Older managed content in `GEMINI.md` is removed during migration while user-owned context is preserved.
+
+### OpenCode
+
+Native project skills are installed under `.opencode/skills/`.
+
+### Cursor
+
+Rules are installed per project under `.cursor/rules/` and can be selected or applied by Cursor.
 
 ### Aider
 
-Conventions are written to `CONVENTIONS.md` in your project root. Aider reads this file automatically.
+The installer generates `AICODEREVIEW.md`.
+
+When `.aider.conf.yml` does not already contain a user-managed `read` setting, AICodeReview adds:
+
+```yaml
+read:
+  - AICODEREVIEW.md
+```
+
+When a `read` setting already exists, add `AICODEREVIEW.md` to that existing list manually. The installer will not add a duplicate top-level key.
+
+## Check status
+
+```bash
+./list-installed.sh --project /path/to/project
+./check-health.sh --project /path/to/project
+```
+
+Inventory status values:
+
+- `installed`: managed current-format integration exists.
+- `legacy`: old managed instructions exist but native migration is pending.
+- `unmanaged`: a conflicting user-owned path or corrupt marker state exists.
+- `missing`: no installation was found.
+
+## Uninstall
+
+```bash
+./uninstall.sh --agent copilot --project /path/to/project
+./uninstall.sh --agent all --project /path/to/project
+```
+
+Only AICodeReview-managed paths and sections are removed.
