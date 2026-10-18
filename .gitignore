@@ -11,3 +11,6 @@ dist/
 build/
 .gradle/
 node_modules/
+
+# repoguard scan output
+repoguard-results/
