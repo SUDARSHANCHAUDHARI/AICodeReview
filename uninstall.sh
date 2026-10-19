@@ -2,81 +2,51 @@
 
 set -euo pipefail
 
-SECTION_START="# >>> AICodeReview START <<<"
-SECTION_END="# >>> AICodeReview END <<<"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=aicodereview-lib.sh
+source "$ROOT_DIR/aicodereview-lib.sh"
+load_skills "$ROOT_DIR"
 
-skills=(
-  "code-review"
-  "security-audit"
-  "codebase-explainer"
-  "review-fixer"
-  "android-review"
-  "ios-review"
-  "web-review"
-  "release-review"
-  "pr-summary"
-  "context-writer"
-  "changelog-writer"
-  "dependency-audit"
-  "agent-config-review"
-  "backend-review"
-  "performance-review"
-  "accessibility-audit"
-  "database-review"
-  "test-writer"
-  "kmp-review"
-  "docker-review"
-  "ci-review"
-  "api-design-review"
-  "flutter-review"
-  "refactor-planner"
-  "architecture-review"
-  "code-smell-detector"
-  "error-handling-review"
-  "graphql-review"
-  "react-native-review"
-  "tech-debt-audit"
-  "onboarding-writer"
-)
+LEGACY_SECTION_START="# >>> AICodeReview START <<<"
+LEGACY_SECTION_END="# >>> AICodeReview END <<<"
+AIDER_CONFIG_START="# >>> AICodeReview Aider read START <<<"
+AIDER_CONFIG_END="# <<< AICodeReview Aider read END <<<"
 
 agent=""
 project_dir=""
 dry_run=false
 
 usage() {
-  cat <<'EOF'
+  cat <<'EOF_USAGE'
 Usage: ./uninstall.sh [--agent <agent>] [--project <path>] [--dry-run]
 
 Agents:
-  claude   Remove skills from ~/.claude/skills/
-  codex    Remove skills from ~/.codex/skills/
-  global   Remove claude + codex (default)
-  cursor   Remove rules from <project>/.cursor/rules/ (requires --project)
-  copilot  Remove AICodeReview section from <project>/.github/copilot-instructions.md (requires --project)
-  gemini   Remove AICodeReview section from <project>/GEMINI.md (requires --project)
-  aider    Remove AICodeReview section from <project>/CONVENTIONS.md (requires --project)
-  all      Remove all agents: global + cursor + copilot + gemini + aider (requires --project)
+  claude    Remove managed skills from ~/.claude/skills/
+  codex     Remove managed skills from ~/.codex/skills/
+  global    Remove managed claude + codex skills (default)
+  cursor    Remove managed project rules from <project>/.cursor/rules/
+  copilot   Remove managed native skills from <project>/.github/skills/
+  gemini    Remove managed native skills from <project>/.gemini/skills/
+  opencode  Remove managed native skills from <project>/.opencode/skills/
+  aider     Remove managed AICODEREVIEW.md and managed Aider config
+  all       Remove every current adapter (requires --project)
 
-Options:
-  --agent <agent>    Agent to uninstall from (default: global)
-  --project <path>   Target project directory (required for cursor, copilot, gemini, aider, all)
-  --dry-run          Show what would be removed without deleting files
-  --help             Show this help message
-
-Notes:
-  - copilot, gemini, and aider only remove the AICodeReview section.
-    Existing content outside that section is preserved.
-EOF
+Safety:
+  Native skill directories and generated files are deleted only when an
+  AICodeReview ownership marker is present. User-managed files are preserved.
+EOF_USAGE
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent)
-      agent="${2:-}"
+      [[ $# -ge 2 ]] || { echo "Error: --agent requires a value" >&2; exit 1; }
+      agent="$2"
       shift 2
       ;;
     --project)
-      project_dir="${2:-}"
+      [[ $# -ge 2 ]] || { echo "Error: --project requires a value" >&2; exit 1; }
+      project_dir="$2"
       shift 2
       ;;
     --dry-run)
@@ -97,87 +67,74 @@ done
 
 [[ -z "$agent" ]] && agent="global"
 
-remove_global() {
+remove_native_agent() {
   local dest_base="$1"
   local label="$2"
+  local skill
 
   for skill in "${skills[@]}"; do
-    local dest="$dest_base/$skill"
-
-    if [[ ! -e "$dest" ]]; then
-      echo "Not installed: $skill ($label)"
-      continue
-    fi
-
-    if [[ "$dry_run" == true ]]; then
-      echo "Would remove $dest"
-    else
-      rm -rf "$dest"
-      echo "Removed $dest"
-    fi
+    remove_managed_skill_directory "$dest_base/$skill" "$skill" "$label" "$dry_run"
   done
 }
 
 remove_cursor() {
   local rules_dir="$project_dir/.cursor/rules"
+  local skill dest
 
   for skill in "${skills[@]}"; do
-    local dest="$rules_dir/$skill.mdc"
-
-    if [[ ! -e "$dest" ]]; then
-      echo "Not installed: $skill (cursor)"
-      continue
-    fi
-
-    if [[ "$dry_run" == true ]]; then
-      echo "Would remove $dest"
-    else
-      rm -f "$dest"
-      echo "Removed $dest"
-    fi
+    dest="$rules_dir/$skill.mdc"
+    remove_managed_file "$dest" "Cursor rule $skill" "$dry_run"
   done
 }
 
-# Removes only the AICodeReview section from a combined file.
-# Existing content outside the section is preserved.
-remove_section() {
+remove_legacy_section() {
   local dest="$1"
   local label="$2"
 
-  if [[ ! -e "$dest" ]]; then
-    echo "Not installed: $label ($dest)"
-    return
-  fi
-
-  if ! grep -qF "$SECTION_START" "$dest"; then
-    echo "No AICodeReview section found in $dest — skipping"
-    return
-  fi
-
-  if [[ "$dry_run" == true ]]; then
-    echo "Would remove AICodeReview section from $dest"
-    return
-  fi
-
-  python3 - "$dest" "$SECTION_START" "$SECTION_END" <<'PYEOF'
-import sys, re
-path, start_marker, end_marker = sys.argv[1], sys.argv[2], sys.argv[3]
-content = open(path).read()
-pattern = r'\n?' + re.escape(start_marker) + r'.*?' + re.escape(end_marker) + r'\n?'
-updated = re.sub(pattern, '', content, flags=re.DOTALL).strip()
-if updated:
-    open(path, 'w').write(updated + '\n')
-else:
-    import os; os.remove(path)
-PYEOF
-  echo "Removed AICodeReview section from $dest"
+  remove_managed_section \
+    "$dest" \
+    "$LEGACY_SECTION_START" \
+    "$LEGACY_SECTION_END" \
+    "$label" \
+    "$dry_run"
 }
 
-project_agents=("cursor" "copilot" "gemini" "aider")
+remove_copilot() {
+  remove_native_agent "$project_dir/.github/skills" "copilot"
+  remove_legacy_section "$project_dir/.github/copilot-instructions.md" "legacy Copilot instructions"
+}
 
+remove_gemini() {
+  remove_native_agent "$project_dir/.gemini/skills" "gemini"
+  remove_legacy_section "$project_dir/GEMINI.md" "legacy Gemini context"
+}
+
+remove_opencode() {
+  remove_native_agent "$project_dir/.opencode/skills" "opencode"
+}
+
+remove_aider() {
+  remove_managed_file "$project_dir/AICODEREVIEW.md" "Aider conventions" "$dry_run"
+  remove_managed_section \
+    "$project_dir/.aider.conf.yml" \
+    "$AIDER_CONFIG_START" \
+    "$AIDER_CONFIG_END" \
+    "managed Aider read configuration" \
+    "$dry_run"
+  remove_legacy_section "$project_dir/CONVENTIONS.md" "legacy Aider conventions"
+
+  if [[ -f "$project_dir/.aider.conf.yml" ]] && grep -qF "AICODEREVIEW.md" "$project_dir/.aider.conf.yml"; then
+    echo "Note: user-managed .aider.conf.yml content still references AICODEREVIEW.md and was left unchanged."
+  fi
+}
+
+project_agents=("cursor" "copilot" "gemini" "opencode" "aider")
 requires_project=false
-for pa in "${project_agents[@]}"; do
-  [[ "$agent" == "$pa" || "$agent" == "all" ]] && requires_project=true && break
+for project_agent in "${project_agents[@]}"; do
+  if [[ "$agent" == "$project_agent" || "$agent" == "all" ]]; then
+    requires_project=true
+    break
+  fi
 done
 
 if [[ "$requires_project" == true && -z "$project_dir" ]]; then
@@ -185,39 +142,48 @@ if [[ "$requires_project" == true && -z "$project_dir" ]]; then
   exit 1
 fi
 
+if [[ -n "$project_dir" && ! -d "$project_dir" ]]; then
+  echo "Error: project directory does not exist: $project_dir" >&2
+  exit 1
+fi
+
 run_project_agents() {
   remove_cursor
-  remove_section "$project_dir/.github/copilot-instructions.md" "copilot"
-  remove_section "$project_dir/GEMINI.md" "gemini"
-  remove_section "$project_dir/CONVENTIONS.md" "aider"
+  remove_copilot
+  remove_gemini
+  remove_opencode
+  remove_aider
 }
 
 case "$agent" in
   global)
-    remove_global "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
-    remove_global "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
+    remove_native_agent "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
+    remove_native_agent "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
     ;;
   codex)
-    remove_global "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
+    remove_native_agent "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
     ;;
   claude)
-    remove_global "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
+    remove_native_agent "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
     ;;
   cursor)
     remove_cursor
     ;;
   copilot)
-    remove_section "$project_dir/.github/copilot-instructions.md" "copilot"
+    remove_copilot
     ;;
   gemini)
-    remove_section "$project_dir/GEMINI.md" "gemini"
+    remove_gemini
+    ;;
+  opencode)
+    remove_opencode
     ;;
   aider)
-    remove_section "$project_dir/CONVENTIONS.md" "aider"
+    remove_aider
     ;;
   all)
-    remove_global "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
-    remove_global "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
+    remove_native_agent "${CODEX_HOME:-$HOME/.codex}/skills" "codex"
+    remove_native_agent "${CLAUDE_HOME:-$HOME/.claude}/skills" "claude"
     run_project_agents
     ;;
   *)

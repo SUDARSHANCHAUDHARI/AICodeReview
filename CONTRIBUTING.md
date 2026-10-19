@@ -2,16 +2,22 @@
 
 Thanks for improving AICodeReview.
 
-## Local Safety
+## Local safety
 
 - Do not commit secrets, `.env` values, signing keys, keystores, API tokens, or private customer data.
-- Keep project-specific private context in your own repos, not in reusable skills.
-- Test installer changes locally with `./install.sh --dry-run`.
-- Do not publish, push, rename, or change repo visibility unless that is the explicit task.
+- Keep project-specific private context in your own repositories, not in reusable skills.
+- Preserve user-owned files and configuration when changing installers.
+- Test installer changes with dry runs and temporary project directories.
+- Preflight every destination before a multi-agent command writes its first file.
+- Do not publish, push unrelated branches, rename the repository, or change visibility unless explicitly requested.
 
-## Editing Skills
+## Editing skills
 
-Skills live in `skills/<skill-name>/SKILL.md`. Each skill also has agent-specific configs in `skills/<skill-name>/agents/`.
+The canonical workflow lives in:
+
+```text
+skills/<skill-name>/SKILL.md
+```
 
 Each `SKILL.md` needs YAML frontmatter:
 
@@ -22,39 +28,48 @@ description: Use when ...
 ---
 ```
 
-Keep descriptions clear — AI agents use them to decide when a skill applies.
+Descriptions should explain the concrete task and trigger conditions clearly enough for on-demand skill selection.
 
-## Adding A Skill
+The canonical directory is installed natively for Claude Code, Codex, GitHub Copilot, Gemini CLI, and OpenCode. Do not maintain separate full workflow copies for those agents.
+
+## Adding a skill
 
 1. Create `skills/<skill-name>/SKILL.md`.
-2. Add all five agent configs:
-   - `skills/<skill-name>/agents/openai.yaml`
-   - `skills/<skill-name>/agents/cursor.mdc`
-   - `skills/<skill-name>/agents/copilot.md`
-   - `skills/<skill-name>/agents/gemini.md`
-   - `skills/<skill-name>/agents/aider.md`
-3. Add the skill name to the `skills` array in `install.sh` and `uninstall.sh`.
-4. Run `./scripts/validate.sh`.
+2. Add the required files under `skills/<skill-name>/agents/`.
+3. Add a compact Cursor rule and Aider convention where appropriate.
+4. Run validation and the full behavioral test suite.
+5. Update README and CHANGELOG when the public inventory changes.
 
-## Adding An Agent
+Skill directories are discovered dynamically. Do not add the skill name to an installer array.
 
-1. Add the agent config file to every skill under `skills/*/agents/<agent-name>.<ext>`.
-2. Update `install.sh` to handle the new `--agent` value.
-3. Update `uninstall.sh` to handle removal.
-4. Update `validate.sh` to check the new file exists in every skill.
-5. Update README, USAGE.md, and CUSTOMISING.md.
+## Adding an agent integration
 
-## Prompt Quality
+1. Confirm whether the agent supports native `SKILL.md` directories, rules, persistent instructions, conventions, or hooks.
+2. Prefer native on-demand skills when available.
+3. Add install, update, inventory, health, and uninstall behavior.
+4. Add ownership and unmanaged-conflict handling.
+5. Add migration logic when replacing an existing adapter.
+6. Add behavioral tests covering preservation of user-owned content.
+7. Add an all-agent preflight when the integration participates in a combined install.
+8. Update README, AGENTS.md, SKILL_GUIDE.md, issue templates, and CHANGELOG.
 
-- Prefer concrete workflows over vague advice.
-- Tell the AI what to inspect before acting.
-- Include output format expectations.
-- Keep reusable skills free of personal or private repo details.
-- Put repo-specific conventions in `PROJECT_CONTEXT.md`.
+Do not describe skills, rules, conventions, and hooks as equivalent capabilities.
 
-## Before Sharing
+## Prompt quality
+
+- Inspect repository state and relevant files before making claims.
+- Focus on correctness, security, performance, testing, and operational risk.
+- Include evidence, file and line references, impact, and a concrete fix direction.
+- Avoid taste-based findings.
+- Keep review and audit workflows read-only unless the user explicitly requests changes.
+- Put repository-specific conventions in `PROJECT_CONTEXT.md`.
+
+## Before sharing
 
 ```bash
 ./install.sh --dry-run
 ./scripts/validate.sh
+./tests/run-all.sh
 ```
+
+Installer or migration changes should also be tested against temporary projects containing unmanaged conflicts, corrupt legacy markers, and existing configuration.

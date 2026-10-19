@@ -1,76 +1,66 @@
 # Customising AICodeReview
 
-Each workflow is defined in `skills/<skill-name>/SKILL.md`. Agent-specific configs live alongside it in `skills/<skill-name>/agents/`.
+Each workflow is defined canonically in `skills/<skill-name>/SKILL.md`.
 
-Edit the skill text when you want different review behavior. Put reusable cross-project rules in skills and project-specific rules in `PROJECT_CONTEXT.md`.
+Use reusable skills for cross-project behavior and `PROJECT_CONTEXT.md` for repository-specific conventions, commands, architecture, and known risks.
 
-## Skill Structure
+## Skill structure
 
-```
+```text
 skills/<skill-name>/
-  SKILL.md              ← shared prompt (Claude Code + Codex native format)
+  SKILL.md
   agents/
-    openai.yaml         ← Codex display metadata
-    cursor.mdc          ← Cursor rule
-    copilot.md          ← GitHub Copilot instructions snippet
-    gemini.md           ← Gemini CLI instructions
-    aider.md            ← Aider conventions snippet
+    openai.yaml
+    cursor.mdc
+    copilot.md
+    gemini.md
+    aider.md
 ```
 
-## Add Project Rules
+Current roles:
 
-For a project-specific convention, prefer `PROJECT_CONTEXT.md` in the target repo:
+- `SKILL.md` is installed natively for Claude Code, Codex, GitHub Copilot, Gemini CLI, and OpenCode.
+- `openai.yaml` contains Codex-facing metadata pending Phase 1 standardization.
+- `cursor.mdc` is the Cursor rule adapter.
+- `aider.md` is compact source content for the generated `AICODEREVIEW.md` file.
+- `copilot.md` and `gemini.md` remain temporarily for legacy migration and will be removed or generated in Phase 1.
+
+Do not add new Copilot or Gemini behavior only to their legacy Markdown adapters. Native agents must receive the behavior through `SKILL.md`.
+
+## Add project rules
+
+Put project-specific conventions in `PROJECT_CONTEXT.md`:
 
 ```markdown
 ## Conventions
 
 - All new Android UI uses Jetpack Compose.
-- ViewModels expose `StateFlow<UiState>`.
+- ViewModels expose StateFlow<UiState>.
 - Repositories are accessed through domain interfaces.
 ```
 
-All skills read `PROJECT_CONTEXT.md` when present, so the same installed skills adapt to multiple repos automatically.
+Skills read this file when present.
 
-## Add Framework Rules
+## Change a workflow
 
-Add focused checklist items to the relevant skill's `SKILL.md`.
-
-For Android/Kotlin:
+Edit the relevant `SKILL.md` and keep the workflow evidence-based:
 
 ```markdown
-- Compose state should be hoisted where practical and stable across recompositions.
-- ViewModels should not hold Android `Context` unless using `Application` intentionally.
-- Coroutine work should use structured concurrency and avoid leaking scopes.
-- Room access should not run on the main thread.
+## Workflow
+
+1. Inspect repository state and relevant files.
+2. Review the implementation in context.
+3. Report findings with severity, evidence, file and line, impact, and fix direction.
+4. Identify missing verification.
 ```
 
-For web apps:
+Review and audit skills must remain read-only unless the user explicitly requests changes.
 
-```markdown
-- Server endpoints validate input at boundaries.
-- Client components do not import server-only modules.
-- Loading, empty, and error states exist for user-facing data fetches.
-- Secrets are never exposed through public environment variables.
-```
+## Add a new skill
 
-## Skill List
+Create:
 
-| Skill | Purpose |
-|---|---|
-| `code-review` | General code review |
-| `security-audit` | Security and privacy audit |
-| `codebase-explainer` | Repo explanation and onboarding |
-| `review-fixer` | Safe fix application |
-| `android-review` | Android/Kotlin/KMP-specific review |
-| `release-review` | Release readiness check |
-| `pr-summary` | PR description writing |
-| `context-writer` | Project context creation |
-
-## Add A New Skill
-
-1. Create the skill folder:
-
-```
+```text
 skills/my-skill/
   SKILL.md
   agents/
@@ -81,12 +71,12 @@ skills/my-skill/
     aider.md
 ```
 
-2. Minimum `SKILL.md` shape:
+Minimum `SKILL.md`:
 
 ```markdown
 ---
 name: my-skill
-description: Use when ...
+description: Use when the agent should perform this specific workflow.
 ---
 
 # My Skill
@@ -94,30 +84,50 @@ description: Use when ...
 ## Workflow
 
 1. Inspect the relevant files.
-2. Do the task.
+2. Perform the task using repository evidence.
 3. Verify the result.
 4. Report what changed and what remains.
 ```
 
-3. Add the skill name to the `skills` array in `install.sh` and `uninstall.sh`.
+The installer discovers the directory automatically. Do not add a hard-coded skill name to install, uninstall, inventory, or health scripts.
 
-4. Run validation:
+Run:
 
 ```bash
 ./scripts/validate.sh
+./tests/run-all.sh
 ```
 
-## Add A New Agent
+## Add an integration
 
-1. Add the agent config file to every skill under `skills/*/agents/<agent-name>.<ext>`.
-2. Update `install.sh` to handle the new agent.
-3. Update `uninstall.sh` to handle removal.
-4. Update `validate.sh` to check the new agent file exists in each skill.
-5. Document the new agent in README and docs.
+Before implementing a new agent, determine its actual capability:
 
-## Versioning Your Changes
+- Native on-demand skill directory
+- Project rule
+- Persistent instructions
+- Convention file
+- Lifecycle hook
 
-- One skill behavior change per commit.
-- Update docs when a skill name or install path changes.
-- Test install with `./install.sh --dry-run` before sharing.
-- Avoid putting private project details directly into reusable skills.
+Prefer a native on-demand skill when supported.
+
+A complete integration requires:
+
+1. Install path and scope.
+2. Update detection.
+3. Inventory and health reporting.
+4. Ownership markers.
+5. Unmanaged-conflict backups.
+6. Safe uninstall.
+7. Migration from any previous adapter.
+8. Behavioral tests.
+9. Accurate documentation.
+
+Do not claim that rules, persistent instructions, conventions, and hooks are equivalent to skills.
+
+## Versioning changes
+
+- Keep behavior changes focused.
+- Update documentation when a skill name, path, or capability changes.
+- Add an entry under `Unreleased` in `CHANGELOG.md`.
+- Test dry-run, new install, managed update, unmanaged conflict, migration, and uninstall behavior.
+- Never put private project details in reusable skills.
